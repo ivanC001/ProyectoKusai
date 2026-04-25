@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
 
 class User extends Authenticatable
 {
@@ -70,9 +71,24 @@ class User extends Authenticatable
         return $this->tipo_persona === 'empresa';
     }
 
+    public function esCliente(): bool
+    {
+        return $this->rol === 'cliente';
+    }
+
+    public function esAdmin(): bool
+    {
+        return $this->rol === 'admin';
+    }
+
     public function esPersonaNatural(): bool
     {
         return $this->tipo_persona === 'natural';
+    }
+
+    public function tieneFotoPerfil(): bool
+    {
+        return ! empty($this->foto_perfil) && Storage::disk('public')->exists($this->foto_perfil);
     }
 
     public function scopeActivos(Builder $query): Builder
