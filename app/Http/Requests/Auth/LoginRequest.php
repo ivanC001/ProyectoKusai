@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Models\User;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -42,11 +43,24 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+        $credentials = [
+            'email' => $this->input('email'),
+            'password' => $this->input('password'),
+            'estado' => 'activo',
+        ];
+
+        if (! Auth::attempt($credentials, $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 
+            $usuarioInactivo = User::query()
+                ->where('email', $this->input('email'))
+                ->where('estado', 'inactivo')
+                ->exists();
+
             throw ValidationException::withMessages([
-                'email' => trans('auth.failed'),
+                'email' => $usuarioInactivo
+                    ? 'Tu cuenta se encuentra bloqueada. Por infringir las normalas del portal. Porfavor revisa los terminos y condiciones y no regreses.'
+                    : trans('auth.failed'),
             ]);
         }
 

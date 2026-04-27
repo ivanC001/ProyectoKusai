@@ -1,8 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Kusay.pe | Portal inmobiliario</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -26,6 +27,9 @@
             background: #f9fbfa;
             color: var(--text);
             line-height: 1.5;
+        }
+        body.modal-open {
+            overflow: hidden;
         }
         a { color: inherit; text-decoration: none; }
         img { width: 100%; display: block; }
@@ -299,6 +303,34 @@
             border-bottom: 1px solid var(--line);
             box-shadow: 0 8px 16px rgba(14, 45, 32, .08);
         }
+        .quick-block {
+            border-bottom: none;
+            background: transparent;
+        }
+        .quick-block-summary {
+            display: none;
+            list-style: none;
+        }
+        .quick-block-summary::-webkit-details-marker {
+            display: none;
+        }
+        .quick-block-body {
+            display: block;
+        }
+        .quick-block-title {
+            font-weight: 800;
+            color: #214a39;
+            font-size: .93rem;
+            letter-spacing: .02em;
+        }
+        .quick-block-caret {
+            font-size: .8rem;
+            color: #4f7363;
+            transition: transform .2s ease;
+        }
+        .quick-block[open] .quick-block-caret {
+            transform: rotate(180deg);
+        }
         .quick-categories-wrap {
             background: #f6faf8;
             border-bottom: 1px solid var(--line);
@@ -438,6 +470,36 @@
             margin: 0 auto 24px;
             color: rgba(255, 255, 255, .82);
         }
+        .portal-stats {
+            max-width: 690px;
+            margin: 0 auto 22px;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+        .portal-stat {
+            border-radius: 12px;
+            border: 1px solid rgba(182, 231, 204, .5);
+            background: rgba(11, 46, 31, .4);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .03);
+            padding: 10px 12px;
+            text-align: left;
+        }
+        .portal-stat-label {
+            margin: 0;
+            color: #9fd6b8;
+            font-size: .72rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+        }
+        .portal-stat-value {
+            margin: 4px 0 0;
+            color: #fff;
+            font-family: "Fraunces", serif;
+            font-size: clamp(1.2rem, 2vw, 1.55rem);
+            line-height: 1.05;
+        }
         .search-box {
             max-width: 880px;
             margin: 0 auto;
@@ -575,6 +637,278 @@
             font-weight: 800;
             font-size: .88rem;
         }
+        .prop-modal[hidden] {
+            display: none;
+        }
+        .prop-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 90;
+            display: grid;
+            place-items: center;
+            padding: 18px;
+        }
+        .prop-modal-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(9, 30, 22, .58);
+            backdrop-filter: blur(3px);
+        }
+        .prop-modal-dialog {
+            position: relative;
+            z-index: 1;
+            width: min(900px, 95vw);
+            max-height: min(88vh, 760px);
+            display: grid;
+            grid-template-columns: 1.05fr 1fr;
+            overflow: auto;
+            border-radius: 18px;
+            border: 1px solid #cfddd5;
+            background: #fff;
+            box-shadow: 0 24px 50px rgba(9, 35, 25, .35);
+        }
+        .prop-modal-media {
+            position: relative;
+            min-height: 280px;
+            background: #dce9e2;
+        }
+        .prop-modal-media img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+        }
+        .prop-modal-media-empty {
+            width: 100%;
+            height: 100%;
+            display: grid;
+            place-items: center;
+            color: #537464;
+            font-weight: 700;
+            background: linear-gradient(145deg, #dbe8e1, #edf4ef);
+        }
+        .prop-modal-geo[hidden] {
+            display: none;
+        }
+        .prop-modal-geo {
+            position: absolute;
+            left: 12px;
+            right: 12px;
+            bottom: 12px;
+            display: grid;
+            gap: 8px;
+            border: 1px solid rgba(198, 221, 208, .9);
+            border-radius: 14px;
+            background: linear-gradient(145deg, rgba(14, 58, 40, .92), rgba(24, 88, 59, .9));
+            color: #e8f6ee;
+            padding: 9px 10px;
+            box-shadow: 0 10px 24px rgba(8, 28, 21, .35);
+            backdrop-filter: blur(4px);
+        }
+        .prop-modal-geo.no-coords {
+            background: linear-gradient(145deg, rgba(69, 67, 40, .9), rgba(112, 102, 37, .86));
+            border-color: rgba(235, 214, 143, .75);
+            color: #fff7df;
+        }
+        .prop-modal-geo-top {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+        }
+        .prop-modal-geo-pin-wrap {
+            width: 26px;
+            height: 26px;
+            flex-shrink: 0;
+            border-radius: 999px;
+            background: rgba(131, 215, 173, .18);
+            border: 1px solid rgba(131, 215, 173, .52);
+            display: grid;
+            place-items: center;
+        }
+        .prop-modal-geo.no-coords .prop-modal-geo-pin-wrap {
+            background: rgba(255, 232, 145, .16);
+            border-color: rgba(255, 232, 145, .45);
+        }
+        .prop-modal-geo-pin {
+            color: #8ce2b8;
+            font-size: .9rem;
+            line-height: 1;
+        }
+        .prop-modal-geo.no-coords .prop-modal-geo-pin {
+            color: #ffe38b;
+        }
+        .prop-modal-geo-head {
+            min-width: 0;
+        }
+        .prop-modal-geo-title {
+            margin: 0;
+            font-size: .72rem;
+            letter-spacing: .07em;
+            text-transform: uppercase;
+            font-weight: 800;
+            opacity: .93;
+        }
+        .prop-modal-geo-text {
+            margin: 1px 0 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: .79rem;
+            font-weight: 800;
+            letter-spacing: .01em;
+        }
+        .prop-modal-geo-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .prop-modal-geo-link,
+        .prop-modal-geo-copy {
+            border-radius: 999px;
+            border: 1px solid rgba(206, 229, 216, .75);
+            background: rgba(255, 255, 255, .12);
+            color: #ecfaf3;
+            font-size: .73rem;
+            font-weight: 800;
+            letter-spacing: .02em;
+            padding: 5px 9px;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .prop-modal-geo-link:hover,
+        .prop-modal-geo-copy:hover {
+            background: rgba(255, 255, 255, .2);
+        }
+        .prop-modal-geo.no-coords .prop-modal-geo-link,
+        .prop-modal-geo.no-coords .prop-modal-geo-copy {
+            border-color: rgba(241, 224, 162, .8);
+            color: #fff7df;
+        }
+        .prop-modal-geo-copy.copied {
+            background: rgba(124, 214, 170, .24);
+            border-color: rgba(124, 214, 170, .9);
+        }
+        .prop-modal-content {
+            padding: 20px 20px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .prop-modal-type {
+            margin: 0;
+            color: #1e6a49;
+            font-size: .72rem;
+            font-weight: 800;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+        }
+        .prop-modal-title {
+            margin: 0;
+            font-family: "Fraunces", serif;
+            color: #153f2f;
+            font-size: clamp(1.35rem, 2.8vw, 2rem);
+            line-height: 1.1;
+        }
+        .prop-modal-location {
+            margin: 0;
+            color: #698678;
+            font-size: .95rem;
+        }
+        .prop-modal-price {
+            margin: 2px 0 0;
+            color: #b04e27;
+            font-family: "Fraunces", serif;
+            font-size: clamp(1.5rem, 3vw, 2rem);
+            line-height: 1;
+        }
+        .prop-modal-desc {
+            margin: 2px 0 0;
+            color: #315847;
+            font-size: .94rem;
+            line-height: 1.62;
+        }
+        .prop-modal-chips {
+            margin-top: 4px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+        }
+        .prop-modal-chip {
+            border-radius: 999px;
+            border: 1px solid #cddbd3;
+            background: #f3f8f5;
+            color: #355b4b;
+            font-size: .75rem;
+            font-weight: 800;
+            padding: 4px 9px;
+        }
+        .prop-modal-actions {
+            margin-top: auto;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .prop-modal-btn {
+            border: 1px solid transparent;
+            border-radius: 10px;
+            padding: 10px 13px;
+            font: inherit;
+            font-size: .9rem;
+            font-weight: 800;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .prop-modal-btn.main {
+            background: #16573c;
+            color: #fff;
+        }
+        .prop-modal-btn.soft {
+            border-color: #c5d4cb;
+            background: #fff;
+            color: #2d5948;
+        }
+        .prop-modal-btn.fav {
+            border-color: #b8ccc0;
+            background: #f6faf8;
+            color: #245340;
+            border-radius: 999px;
+            width: 44px;
+            height: 44px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.35rem;
+            line-height: 1;
+        }
+        .prop-modal-btn.fav.active {
+            border-color: #16573c;
+            background: #16573c;
+            color: #fff;
+        }
+        .prop-modal-feedback {
+            width: 100%;
+            margin: 2px 0 0;
+            color: #315847;
+            font-size: .82rem;
+            font-weight: 700;
+        }
+        .prop-modal-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 34px;
+            height: 34px;
+            border: 1px solid #cedbd4;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, .95);
+            color: #255340;
+            font-size: 1.15rem;
+            font-weight: 800;
+            cursor: pointer;
+        }
         .empty-list {
             border: 1px dashed #bad0c4;
             border-radius: 16px;
@@ -670,12 +1004,42 @@
             #nav { padding: 0 14px; }
             .nav-actions { display: none; }
             .mobile-nav { display: block; }
+            .quick-nav {
+                box-shadow: none;
+                border-bottom: none;
+            }
+            .quick-block {
+                border-bottom: 1px solid #d6e1da;
+                background: #f0f4f1;
+            }
+            .quick-block-summary {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 10px;
+                cursor: pointer;
+                padding: 11px 12px;
+                background: #f6faf8;
+            }
+            .quick-block .quick-block-body {
+                display: none;
+            }
+            .quick-block[open] .quick-block-body {
+                display: block;
+            }
             .quick-categories {
+                padding: 10px 12px 8px;
                 justify-content: flex-start;
                 overflow-x: auto;
                 overflow-y: hidden;
                 flex-wrap: nowrap;
                 scrollbar-width: none;
+            }
+            .cat-btn {
+                flex: 0 0 auto;
+                font-size: 1rem;
+                padding: 8px 12px;
+                gap: 6px;
             }
             .quick-categories::-webkit-scrollbar {
                 display: none;
@@ -683,12 +1047,102 @@
             .quick-categories-wrap.has-hidden .cat-toggle-row {
                 display: flex;
             }
-            .quick-categories-wrap.is-expanded .quick-categories {
-                flex-wrap: wrap;
-                overflow: visible;
-                padding-bottom: 6px;
+            .cat-toggle-row {
+                padding: 4px 12px 10px;
             }
-            .quick-right { width: 100%; margin-left: 0; justify-content: flex-start; }
+            .quick-categories-wrap.is-expanded .quick-categories {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 8px;
+                overflow: visible;
+                padding: 10px 12px 4px;
+            }
+            .quick-categories-wrap.is-expanded .cat-btn {
+                width: 100%;
+                min-height: 42px;
+                justify-content: flex-start;
+                border: 1px solid #d1ddd6;
+                background: #f8fbf9;
+                font-size: .98rem;
+            }
+            .quick-categories-wrap.is-expanded .cat-btn.active {
+                border-color: #9cbcae;
+                background: #eef6f1;
+            }
+
+            .quick-filters {
+                padding: 10px 12px 12px;
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            .chip-row {
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                overflow-y: hidden;
+                padding-bottom: 2px;
+                scrollbar-width: none;
+            }
+            .chip-row::-webkit-scrollbar {
+                display: none;
+            }
+            .chip {
+                flex: 0 0 auto;
+                padding: 8px 13px;
+                white-space: nowrap;
+            }
+
+            .quick-right {
+                width: 100%;
+                margin-left: 0;
+                display: grid;
+                grid-template-columns: 1fr auto;
+                align-items: center;
+                gap: 8px;
+            }
+            .ord-form {
+                width: 100%;
+            }
+            .ord-select {
+                width: 100%;
+                min-width: 0;
+            }
+            .count {
+                white-space: nowrap;
+                font-size: .95rem;
+            }
+            .prop-modal {
+                padding: 10px;
+            }
+            .prop-modal-dialog {
+                width: 100%;
+                max-height: 90vh;
+                grid-template-columns: 1fr;
+            }
+            .prop-modal-media {
+                min-height: 210px;
+            }
+            .prop-modal-content {
+                padding: 14px 14px 16px;
+            }
+            .prop-modal-geo {
+                left: 10px;
+                right: 10px;
+                bottom: 10px;
+                padding: 8px 9px;
+            }
+            .prop-modal-geo-title {
+                font-size: .68rem;
+            }
+            .prop-modal-geo-text {
+                font-size: .74rem;
+            }
+            .prop-modal-geo-actions {
+                width: 100%;
+            }
+            .portal-stats {
+                grid-template-columns: 1fr;
+            }
             .sec { padding: 44px 16px; }
             .search-form .row, .search-form .row2 { grid-template-columns: 1fr; }
             .vip-grid, .prop-grid, .guia-grid, .ciu-grid { grid-template-columns: 1fr; }
@@ -727,8 +1181,8 @@
             <li><a class="active" href="#props">Propiedades</a></li>
             <li><a href="#ciudades">Ciudades</a></li>
             <li><a href="#publicar">Como publicar</a></li>
-            <li><a href="#publicar">Planes</a></li>
-            <li><a href="#publicar">Financiamiento</a></li>
+            <!-- <li><a href="#publicar">Planes</a></li>
+            <li><a href="#publicar">Financiamiento</a></li> -->
             <li><a href="#destacadas">Destacadas</a></li>
         </ul>
         <div class="nav-actions">
@@ -748,6 +1202,9 @@
                     </summary>
                     <div class="user-dropdown">
                         <a href="{{ route('propiedades.mine') }}" class="user-item">Mis publicaciones</a>
+                        @if (auth()->user()->esAdmin())
+                            <a href="{{ route('admin.PanelAdministrativo') }}" class="user-item">Panel administrativo</a>
+                        @endif
                         <a href="{{ route('profile.edit') }}" class="user-item">Ver y editar perfil</a>
                         <form method="POST" action="{{ route('logout') }}" class="logout-inline">
                             @csrf
@@ -783,6 +1240,9 @@
                         </div>
                     </div>
                     <a href="{{ route('propiedades.mine') }}" class="mobile-nav-link">Mis publicaciones</a>
+                    @if (auth()->user()->esAdmin())
+                        <a href="{{ route('admin.PanelAdministrativo') }}" class="mobile-nav-link">Panel administrativo</a>
+                    @endif
                     <a href="{{ route('profile.edit') }}" class="mobile-nav-link">Ver y editar perfil</a>
                     <a href="{{ route('propiedades.create') }}" class="mobile-nav-link">Publica gratis</a>
                     <form method="POST" action="{{ route('logout') }}" class="mobile-nav-form">
@@ -799,6 +1259,12 @@
     </header>
 
     <section class="quick-nav">
+        <details class="quick-block quick-block-cats" data-quick-block data-quick-block-cats open>
+            <summary class="quick-block-summary" aria-label="Ver categorias">
+                <span class="quick-block-title">Categorias</span>
+                <span class="quick-block-caret">&#9662;</span>
+            </summary>
+            <div class="quick-block-body">
         <div class="quick-categories-wrap" data-cat-wrap>
             <div class="quick-categories" data-cat-list id="quick-categories-list">
                 <a
@@ -831,7 +1297,15 @@
                 </button>
             </div>
         </div>
+            </div>
+        </details>
 
+        <details class="quick-block quick-block-filters" data-quick-block data-quick-block-filters open>
+            <summary class="quick-block-summary" aria-label="Ver filtros">
+                <span class="quick-block-title">Ubicacion y orden</span>
+                <span class="quick-block-caret">&#9662;</span>
+            </summary>
+            <div class="quick-block-body">
         <div class="quick-filters">
             <div class="chip-row">
                 <a
@@ -870,6 +1344,8 @@
                 <span class="count">{{ $totalResultados }} propiedades</span>
             </div>
         </div>
+            </div>
+        </details>
     </section>
 
     <main>
@@ -878,6 +1354,16 @@
                 <div class="hero-tag">Portal inmobiliario N1 - Selva y Sierra peruana</div>
                 <h1>Tu proxima propiedad en la <em>Selva</em> y <em>Sierra</em> del Peru</h1>
                 <p class="hero-sub">Terrenos, casas, departamentos, lotes, chacras y mas. Publica gratis y conecta directo con compradores.</p>
+                <div class="portal-stats">
+                    <article class="portal-stat">
+                        <p class="portal-stat-label">Usuarios que visitaron el portal</p>
+                        <p class="portal-stat-value">{{ number_format((int) $metricasPortal['usuarios_visitantes'], 0, '.', ',') }}</p>
+                    </article>
+                    <article class="portal-stat">
+                        <p class="portal-stat-label">Clics registrados en propiedades</p>
+                        <p class="portal-stat-value">{{ number_format((int) $metricasPortal['clics_propiedades'], 0, '.', ',') }}</p>
+                    </article>
+                </div>
 
                 <div class="search-box">
                     <div class="search-tabs">
@@ -965,7 +1451,44 @@
                                 {{ $propiedad->ubicacion?->departamento ?? 'Sin departamento' }}
                             </p>
                             <p class="card-price">S/ {{ number_format((float) $propiedad->precio, 2, '.', ',') }}</p>
-                            <a class="card-link" href="{{ route('portal.propiedades.show', $propiedad) }}">Ver propiedad</a>
+                            <div class="meta-row">
+                                <span class="meta-chip">{{ $propiedad->visitas_count }} clic(s)</span>
+                                <span class="meta-chip">{{ $propiedad->favoritos_count }} favorito(s)</span>
+                            </div>
+                            @php
+                                $descripcionModal = \Illuminate\Support\Str::limit(
+                                    trim((string) preg_replace('/\s+/', ' ', strip_tags((string) $propiedad->descripcion))),
+                                    220
+                                );
+                                $ubicacionModal = trim(($propiedad->ubicacion?->distrito ?? 'Sin distrito').', '.($propiedad->ubicacion?->departamento ?? 'Sin departamento'));
+                                $imagenModal = $propiedad->portadaImagen
+                                    ? route('portal.propiedades.imagen', [$propiedad, $propiedad->portadaImagen])
+                                    : '';
+                            @endphp
+                            <a
+                                class="card-link js-open-detail"
+                                href="#"
+                                data-title="{{ $propiedad->titulo }}"
+                                data-tipo="{{ $propiedad->tipoPropiedad?->nombre ?? 'Propiedad' }}"
+                                data-ubicacion="{{ $ubicacionModal }}"
+                                data-precio="{{ number_format((float) $propiedad->precio, 2, '.', ',') }}"
+                                data-descripcion="{{ $descripcionModal }}"
+                                data-operacion="{{ ucfirst($propiedad->tipo) }}"
+                                data-fotos="{{ $propiedad->imagenes_count }}"
+                                data-contactos="{{ $propiedad->contactos_count }}"
+                                data-dormitorios="{{ $propiedad->habitaciones ?? '' }}"
+                                data-area="{{ $propiedad->area !== null ? number_format((float) $propiedad->area, 2, '.', ',').' m2' : '' }}"
+                                data-image="{{ $imagenModal }}"
+                                data-lat="{{ $propiedad->latitud ?? '' }}"
+                                data-lng="{{ $propiedad->longitud ?? '' }}"
+                                data-clics="{{ $propiedad->visitas_count }}"
+                                data-favoritos="{{ $propiedad->favoritos_count }}"
+                                data-favorita="{{ $favoritasIds->contains($propiedad->id) ? '1' : '0' }}"
+                                data-click-url="{{ route('portal.propiedades.click', $propiedad) }}"
+                                data-favorito-url="{{ route('portal.propiedades.favoritos.toggle', $propiedad) }}"
+                            >
+                                Ver propiedad
+                            </a>
                         </div>
                     </article>
                 @empty
@@ -1010,8 +1533,43 @@
                                     <span class="meta-chip">{{ ucfirst($propiedad->tipo) }}</span>
                                     <span class="meta-chip">{{ $propiedad->imagenes_count }} foto(s)</span>
                                     <span class="meta-chip">{{ $propiedad->contactos_count }} contacto(s)</span>
+                                    <span class="meta-chip">{{ $propiedad->visitas_count }} clic(s)</span>
+                                    <span class="meta-chip">{{ $propiedad->favoritos_count }} favorito(s)</span>
                                 </div>
-                                <a class="card-link" href="{{ route('portal.propiedades.show', $propiedad) }}">Ver detalle</a>
+                                @php
+                                    $descripcionModal = \Illuminate\Support\Str::limit(
+                                        trim((string) preg_replace('/\s+/', ' ', strip_tags((string) $propiedad->descripcion))),
+                                        220
+                                    );
+                                    $ubicacionModal = trim(($propiedad->ubicacion?->distrito ?? 'Sin distrito').', '.($propiedad->ubicacion?->departamento ?? 'Sin departamento'));
+                                    $imagenModal = $propiedad->portadaImagen
+                                        ? route('portal.propiedades.imagen', [$propiedad, $propiedad->portadaImagen])
+                                        : '';
+                                @endphp
+                                <a
+                                    class="card-link js-open-detail"
+                                    href="#"
+                                    data-title="{{ $propiedad->titulo }}"
+                                    data-tipo="{{ $propiedad->tipoPropiedad?->nombre ?? 'Propiedad' }}"
+                                    data-ubicacion="{{ $ubicacionModal }}"
+                                    data-precio="{{ number_format((float) $propiedad->precio, 2, '.', ',') }}"
+                                    data-descripcion="{{ $descripcionModal }}"
+                                    data-operacion="{{ ucfirst($propiedad->tipo) }}"
+                                    data-fotos="{{ $propiedad->imagenes_count }}"
+                                    data-contactos="{{ $propiedad->contactos_count }}"
+                                    data-dormitorios="{{ $propiedad->habitaciones ?? '' }}"
+                                    data-area="{{ $propiedad->area !== null ? number_format((float) $propiedad->area, 2, '.', ',').' m2' : '' }}"
+                                    data-image="{{ $imagenModal }}"
+                                    data-lat="{{ $propiedad->latitud ?? '' }}"
+                                    data-lng="{{ $propiedad->longitud ?? '' }}"
+                                    data-clics="{{ $propiedad->visitas_count }}"
+                                    data-favoritos="{{ $propiedad->favoritos_count }}"
+                                    data-favorita="{{ $favoritasIds->contains($propiedad->id) ? '1' : '0' }}"
+                                    data-click-url="{{ route('portal.propiedades.click', $propiedad) }}"
+                                    data-favorito-url="{{ route('portal.propiedades.favoritos.toggle', $propiedad) }}"
+                                >
+                                    Ver detalle
+                                </a>
                             </div>
                         </article>
                     @endforeach
@@ -1083,6 +1641,48 @@
         </section>
     </main>
 
+    <div class="prop-modal" id="prop-detail-modal" hidden>
+        <div class="prop-modal-backdrop" data-modal-close></div>
+        <article class="prop-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="prop-modal-title">
+            <button class="prop-modal-close" type="button" aria-label="Cerrar detalle" data-modal-close>&times;</button>
+            <div class="prop-modal-media">
+                <img id="prop-modal-image" alt="Imagen de propiedad">
+                <div id="prop-modal-image-empty" class="prop-modal-media-empty">Sin foto disponible</div>
+                <div id="prop-modal-geo" class="prop-modal-geo" hidden>
+                    <div class="prop-modal-geo-top">
+                        <span class="prop-modal-geo-pin-wrap">
+                            <span class="prop-modal-geo-pin">&#128205;</span>
+                        </span>
+                        <div class="prop-modal-geo-head">
+                            <p class="prop-modal-geo-title">Ubicacion GPS marcada</p>
+                            <p class="prop-modal-geo-text" id="prop-modal-geo-text">Lat: - | Lng: -</p>
+                        </div>
+                    </div>
+                    <div class="prop-modal-geo-actions">
+                        <a id="prop-modal-geo-map" class="prop-modal-geo-link" href="#" target="_blank" rel="noopener noreferrer">Ver en OpenStreetMap</a>
+                        <button id="prop-modal-geo-copy" class="prop-modal-geo-copy" type="button">Copiar coordenadas</button>
+                    </div>
+                </div>
+            </div>
+            <div class="prop-modal-content">
+                <p class="prop-modal-type" id="prop-modal-type">Propiedad</p>
+                <h3 class="prop-modal-title" id="prop-modal-title">Detalle</h3>
+                <p class="prop-modal-location" id="prop-modal-location">Ubicacion</p>
+                <p class="prop-modal-price" id="prop-modal-price">S/ 0.00</p>
+                <p class="prop-modal-desc" id="prop-modal-desc">Descripcion de la propiedad.</p>
+                <div class="prop-modal-chips" id="prop-modal-chips"></div>
+                <div class="prop-modal-actions">
+                    @auth
+                        <button class="prop-modal-btn fav" id="prop-modal-favorite" type="button" hidden aria-label="Agregar a favoritos" aria-pressed="false" title="Agregar a favoritos">☆</button>
+                    @endauth
+                    <button class="prop-modal-btn main" type="button" data-modal-close>Entendido</button>
+                    <button class="prop-modal-btn soft" type="button" data-modal-close>Cerrar</button>
+                </div>
+                <p class="prop-modal-feedback" id="prop-modal-feedback" hidden></p>
+            </div>
+        </article>
+    </div>
+
     <footer>
         <div class="footer-wrap">
             <a href="{{ route('home') }}" class="logo"><span class="logo-icon">&#127807;</span>Kusay<span class="dot">.</span><span class="pe">pe</span></a>
@@ -1094,21 +1694,45 @@
             const wrap = document.querySelector('[data-cat-wrap]');
             const list = document.querySelector('[data-cat-list]');
             const toggle = document.querySelector('[data-cat-toggle]');
-            if (!wrap || !list || !toggle) {
-                return;
-            }
-
+            const catsBlock = document.querySelector('[data-quick-block-cats]');
+            const filtersBlock = document.querySelector('[data-quick-block-filters]');
+            const quickBlocks = Array.from(document.querySelectorAll('[data-quick-block]'));
             const mobileQuery = window.matchMedia('(max-width: 760px)');
 
             const setCollapsed = () => {
+                if (!wrap || !toggle) {
+                    return;
+                }
+
                 wrap.classList.remove('is-expanded');
                 toggle.setAttribute('aria-expanded', 'false');
                 toggle.textContent = 'Ver mas categorias';
             };
 
+            const isCatsVisible = () => {
+                if (!mobileQuery.matches) {
+                    return true;
+                }
+
+                if (!catsBlock) {
+                    return true;
+                }
+
+                return catsBlock.open;
+            };
+
             const updateToggleVisibility = () => {
+                if (!wrap || !list || !toggle) {
+                    return;
+                }
+
                 if (!mobileQuery.matches) {
                     wrap.classList.remove('has-hidden');
+                    setCollapsed();
+                    return;
+                }
+
+                if (!isCatsVisible()) {
                     setCollapsed();
                     return;
                 }
@@ -1122,15 +1746,361 @@
                 }
             };
 
-            toggle.addEventListener('click', () => {
-                const expand = !wrap.classList.contains('is-expanded');
-                wrap.classList.toggle('is-expanded', expand);
-                toggle.setAttribute('aria-expanded', expand ? 'true' : 'false');
-                toggle.textContent = expand ? 'Ver menos categorias' : 'Ver mas categorias';
+            if (toggle && wrap) {
+                toggle.addEventListener('click', () => {
+                    const expand = !wrap.classList.contains('is-expanded');
+                    wrap.classList.toggle('is-expanded', expand);
+                    toggle.setAttribute('aria-expanded', expand ? 'true' : 'false');
+                    toggle.textContent = expand ? 'Ver menos categorias' : 'Ver mas categorias';
+                });
+            }
+
+            quickBlocks.forEach((block) => {
+                block.addEventListener('toggle', () => {
+                    if (mobileQuery.matches && block.open) {
+                        quickBlocks.forEach((otherBlock) => {
+                            if (otherBlock !== block) {
+                                otherBlock.open = false;
+                            }
+                        });
+                    }
+
+                    if (block === catsBlock && !block.open) {
+                        setCollapsed();
+                    }
+
+                    updateToggleVisibility();
+                });
             });
 
+            const syncDetailsByViewport = () => {
+                if (!quickBlocks.length) {
+                    return;
+                }
+
+                if (!mobileQuery.matches) {
+                    quickBlocks.forEach((block) => {
+                        block.open = true;
+                    });
+                    return;
+                }
+
+                if (catsBlock) {
+                    catsBlock.open = false;
+                }
+                if (filtersBlock) {
+                    filtersBlock.open = false;
+                }
+            };
+
+            syncDetailsByViewport();
             window.addEventListener('resize', updateToggleVisibility);
+
+            if (typeof mobileQuery.addEventListener === 'function') {
+                mobileQuery.addEventListener('change', () => {
+                    syncDetailsByViewport();
+                    updateToggleVisibility();
+                });
+            } else if (typeof mobileQuery.addListener === 'function') {
+                mobileQuery.addListener(() => {
+                    syncDetailsByViewport();
+                    updateToggleVisibility();
+                });
+            }
+
             updateToggleVisibility();
+        })();
+
+        (() => {
+            const modal = document.getElementById('prop-detail-modal');
+            const triggers = Array.from(document.querySelectorAll('.js-open-detail'));
+            if (!modal || !triggers.length) {
+                return;
+            }
+
+            const image = document.getElementById('prop-modal-image');
+            const imageEmpty = document.getElementById('prop-modal-image-empty');
+            const type = document.getElementById('prop-modal-type');
+            const title = document.getElementById('prop-modal-title');
+            const location = document.getElementById('prop-modal-location');
+            const price = document.getElementById('prop-modal-price');
+            const description = document.getElementById('prop-modal-desc');
+            const chips = document.getElementById('prop-modal-chips');
+            const geoBox = document.getElementById('prop-modal-geo');
+            const geoText = document.getElementById('prop-modal-geo-text');
+            const geoMapLink = document.getElementById('prop-modal-geo-map');
+            const geoCopyButton = document.getElementById('prop-modal-geo-copy');
+            const favoriteButton = document.getElementById('prop-modal-favorite');
+            const feedback = document.getElementById('prop-modal-feedback');
+            const closeButtons = Array.from(modal.querySelectorAll('[data-modal-close]'));
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            const loginUrl = @json(route('login'));
+            let currentCoordsText = '';
+            let activeTrigger = null;
+
+            const closeModal = () => {
+                modal.hidden = true;
+                document.body.classList.remove('modal-open');
+            };
+
+            const showFeedback = (message, isError = false) => {
+                if (!feedback) {
+                    return;
+                }
+
+                if (!message) {
+                    feedback.hidden = true;
+                    feedback.textContent = '';
+                    return;
+                }
+
+                feedback.hidden = false;
+                feedback.textContent = message;
+                feedback.style.color = isError ? '#9a3434' : '#315847';
+            };
+
+            const updateFavoriteButton = (trigger) => {
+                if (!favoriteButton || !trigger) {
+                    return;
+                }
+
+                const favorita = trigger.dataset.favorita === '1';
+                const favoritoUrl = trigger.dataset.favoritoUrl || '';
+
+                favoriteButton.hidden = favoritoUrl === '';
+                favoriteButton.dataset.url = favoritoUrl;
+                favoriteButton.classList.toggle('active', favorita);
+                favoriteButton.textContent = favorita ? '★' : '☆';
+                favoriteButton.setAttribute('aria-label', favorita ? 'Quitar de favoritos' : 'Agregar a favoritos');
+                favoriteButton.setAttribute('title', favorita ? 'Quitar de favoritos' : 'Agregar a favoritos');
+                favoriteButton.setAttribute('aria-pressed', favorita ? 'true' : 'false');
+            };
+
+            const buildChips = (trigger) => {
+                if (!chips) {
+                    return;
+                }
+
+                chips.innerHTML = '';
+
+                const chipValues = [
+                    trigger.dataset.operacion ? `Operacion: ${trigger.dataset.operacion}` : '',
+                    trigger.dataset.fotos ? `${trigger.dataset.fotos} foto(s)` : '',
+                    trigger.dataset.contactos ? `${trigger.dataset.contactos} contacto(s)` : '',
+                    trigger.dataset.clics ? `${trigger.dataset.clics} clic(s)` : '',
+                    trigger.dataset.favoritos ? `${trigger.dataset.favoritos} favorito(s)` : '',
+                    trigger.dataset.dormitorios ? `${trigger.dataset.dormitorios} dormitorio(s)` : '',
+                    trigger.dataset.area ? `Area: ${trigger.dataset.area}` : '',
+                ].filter(Boolean);
+
+                chipValues.forEach((value) => {
+                    const span = document.createElement('span');
+                    span.className = 'prop-modal-chip';
+                    span.textContent = value;
+                    chips.appendChild(span);
+                });
+            };
+
+            const openModal = (trigger) => {
+                activeTrigger = trigger;
+                const imageUrl = trigger.dataset.image || '';
+                const latValue = Number.parseFloat(trigger.dataset.lat || '');
+                const lngValue = Number.parseFloat(trigger.dataset.lng || '');
+                const hasCoords = Number.isFinite(latValue) && Number.isFinite(lngValue);
+
+                if (image && imageEmpty) {
+                    if (imageUrl !== '') {
+                        image.src = imageUrl;
+                        image.style.display = 'block';
+                        imageEmpty.style.display = 'none';
+                    } else {
+                        image.removeAttribute('src');
+                        image.style.display = 'none';
+                        imageEmpty.style.display = 'grid';
+                    }
+                }
+
+                if (geoBox && geoText) {
+                    if (hasCoords) {
+                        currentCoordsText = `${latValue.toFixed(7)}, ${lngValue.toFixed(7)}`;
+                        geoText.textContent = `Lat: ${latValue.toFixed(7)} | Lng: ${lngValue.toFixed(7)}`;
+                        geoBox.classList.remove('no-coords');
+                        geoBox.hidden = false;
+
+                        if (geoMapLink) {
+                            geoMapLink.href = `https://www.openstreetmap.org/?mlat=${latValue.toFixed(7)}&mlon=${lngValue.toFixed(7)}#map=17/${latValue.toFixed(7)}/${lngValue.toFixed(7)}`;
+                            geoMapLink.style.pointerEvents = 'auto';
+                            geoMapLink.style.opacity = '1';
+                        }
+                    } else {
+                        currentCoordsText = '';
+                        geoText.textContent = 'Coordenadas no registradas para esta propiedad.';
+                        geoBox.classList.add('no-coords');
+                        geoBox.hidden = false;
+
+                        if (geoMapLink) {
+                            geoMapLink.href = '#';
+                            geoMapLink.style.pointerEvents = 'none';
+                            geoMapLink.style.opacity = '.55';
+                        }
+                    }
+                }
+
+                if (type) {
+                    type.textContent = trigger.dataset.tipo || 'Propiedad';
+                }
+                if (title) {
+                    title.textContent = trigger.dataset.title || 'Detalle de propiedad';
+                }
+                if (location) {
+                    location.textContent = trigger.dataset.ubicacion || 'Sin ubicacion';
+                }
+                if (price) {
+                    price.textContent = `S/ ${trigger.dataset.precio || '0.00'}`;
+                }
+                if (description) {
+                    description.textContent = trigger.dataset.descripcion || 'Sin descripcion disponible.';
+                }
+
+                buildChips(trigger);
+                updateFavoriteButton(trigger);
+                showFeedback('');
+
+                modal.hidden = false;
+                document.body.classList.add('modal-open');
+            };
+
+            const reportClick = (trigger) => {
+                const clickUrl = trigger?.dataset?.clickUrl || '';
+                if (!clickUrl || !csrfToken) {
+                    return;
+                }
+
+                fetch(clickUrl, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest',
+                        Accept: 'application/json',
+                    },
+                    keepalive: true,
+                }).catch(() => {
+                    // El registro de clic es auxiliar; ignoramos errores de red.
+                });
+            };
+
+            triggers.forEach((trigger) => {
+                trigger.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    reportClick(trigger);
+
+                    const clicsActuales = Number.parseInt(trigger.dataset.clics || '', 10);
+                    if (Number.isFinite(clicsActuales)) {
+                        trigger.dataset.clics = String(clicsActuales + 1);
+                    }
+
+                    openModal(trigger);
+                });
+            });
+
+            if (favoriteButton) {
+                favoriteButton.addEventListener('click', async () => {
+                    if (!activeTrigger) {
+                        return;
+                    }
+
+                    const favoritoUrl = favoriteButton.dataset.url || '';
+                    if (!favoritoUrl) {
+                        showFeedback('No se pudo identificar la propiedad.', true);
+                        return;
+                    }
+
+                    favoriteButton.disabled = true;
+                    showFeedback('Guardando favorito...');
+
+                    try {
+                        const response = await fetch(favoritoUrl, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': csrfToken,
+                                'X-Requested-With': 'XMLHttpRequest',
+                                Accept: 'application/json',
+                            },
+                        });
+
+                        if (response.status === 401) {
+                            window.location.href = loginUrl;
+                            return;
+                        }
+
+                        const payload = await response.json();
+
+                        if (!response.ok || payload.ok === false) {
+                            throw new Error(payload.message || 'No se pudo actualizar favorito.');
+                        }
+
+                        activeTrigger.dataset.favorita = payload.favorita ? '1' : '0';
+                        activeTrigger.dataset.favoritos = String(payload.total_favoritos ?? 0);
+                        updateFavoriteButton(activeTrigger);
+                        buildChips(activeTrigger);
+                        showFeedback(payload.message || 'Favorito actualizado.');
+                    } catch (error) {
+                        showFeedback(error?.message || 'No se pudo actualizar favorito.', true);
+                    } finally {
+                        favoriteButton.disabled = false;
+                    }
+                });
+            }
+
+            closeButtons.forEach((button) => {
+                button.addEventListener('click', closeModal);
+            });
+
+            if (geoCopyButton) {
+                geoCopyButton.addEventListener('click', async () => {
+                    if (!currentCoordsText) {
+                        geoCopyButton.textContent = 'Sin coordenadas';
+                        geoCopyButton.classList.add('copied');
+                        setTimeout(() => {
+                            geoCopyButton.textContent = 'Copiar coordenadas';
+                            geoCopyButton.classList.remove('copied');
+                        }, 1200);
+                        return;
+                    }
+
+                    try {
+                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                            await navigator.clipboard.writeText(currentCoordsText);
+                        } else {
+                            const helper = document.createElement('textarea');
+                            helper.value = currentCoordsText;
+                            helper.setAttribute('readonly', '');
+                            helper.style.position = 'absolute';
+                            helper.style.left = '-9999px';
+                            document.body.appendChild(helper);
+                            helper.select();
+                            document.execCommand('copy');
+                            document.body.removeChild(helper);
+                        }
+
+                        geoCopyButton.textContent = 'Copiado';
+                        geoCopyButton.classList.add('copied');
+                    } catch (error) {
+                        geoCopyButton.textContent = 'No se pudo copiar';
+                    }
+
+                    setTimeout(() => {
+                        geoCopyButton.textContent = 'Copiar coordenadas';
+                        geoCopyButton.classList.remove('copied');
+                    }, 1300);
+                });
+            }
+
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && !modal.hidden) {
+                    closeModal();
+                }
+            });
         })();
     </script>
 </body>

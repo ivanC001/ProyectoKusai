@@ -129,12 +129,11 @@
 <body>
     <div class="admin-shell">
         <aside class="admin-sidebar">
-            <a href="{{ route('admin.dashboard') }}" class="admin-brand">🌿 Kusay<span class="dot">.</span><span class="pe">pe</span></a>
+            <a href="{{ route('admin.dashboard') }}" class="admin-brand">Kusay<span class="dot">.</span><span class="pe">pe</span></a>
             <nav class="admin-nav">
                 <a href="{{ route('admin.dashboard') }}" class="admin-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">Panel</a>
-                <a href="{{ route('admin.tipos-propiedad.index') }}" class="admin-link {{ request()->routeIs('admin.tipos-propiedad.*') ? 'active' : '' }}">Tipos de propiedad</a>
-                <a href="{{ route('propiedades.create') }}" class="admin-link">Registro de propiedad</a>
-                <a href="{{ route('register') }}" class="admin-link">Registro de usuario</a>
+                <a href="{{ route('admin.PanelAdministrativo') }}" class="admin-link {{ request()->routeIs('admin.PanelAdministrativo') || request()->routeIs('admin.PanelAdministrativo.tipos.*') ? 'active' : '' }}">Administrar tipo de terrenos</a>
+                <a href="{{ route('admin.PanelAdministrativo.usuarios.index') }}" class="admin-link {{ request()->routeIs('admin.PanelAdministrativo.usuarios.*') ? 'active' : '' }}">Administrar usuarios</a>
                 <a href="/" class="admin-link">Volver al sitio</a>
             </nav>
         </aside>

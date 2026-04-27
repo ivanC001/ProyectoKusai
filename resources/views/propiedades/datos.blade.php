@@ -3,6 +3,7 @@
 @section('title', 'Paso 3: Completa Datos | Kusay.pe')
 
 @section('styles')
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
 <style>
     .container {
         width: min(1080px, 94vw);
@@ -170,6 +171,53 @@
         color: #a72828;
         font-size: 12px;
         font-weight: 700;
+    }
+    .map-wrapper {
+        border: 1px solid #c8ddd0;
+        border-radius: 14px;
+        background: #f4faf7;
+        padding: 12px;
+    }
+    .map-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 9px;
+    }
+    .map-head p {
+        margin: 0;
+        color: #4f7463;
+        font-size: .88rem;
+        font-weight: 700;
+    }
+    #mapa-propiedad {
+        width: 100%;
+        height: 340px;
+        border: 1px solid #bfd6c8;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    .coords {
+        margin-top: 8px;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    .coord-chip {
+        border-radius: 999px;
+        border: 1px solid #c8ddd1;
+        background: #eef6f1;
+        color: #2f5d4b;
+        font-size: .78rem;
+        font-weight: 800;
+        padding: 5px 10px;
+    }
+    .map-help {
+        margin-top: 8px;
+        color: #648477;
+        font-size: .83rem;
     }
     .divider {
         border: none;
@@ -391,15 +439,26 @@
                     @error('direccion') <span class="error-text">{{ $message }}</span> @enderror
                 </div>
 
-                <div class="field span-2">
-                    <label for="latitud">LATITUD</label>
-                    <input id="latitud" name="latitud" type="number" step="0.0000001" value="{{ old('latitud') }}" placeholder="-8.3800000">
-                    @error('latitud') <span class="error-text">{{ $message }}</span> @enderror
+                <div class="field span-4">
+                    <label>COORDENADAS GPS</label>
+                    <div class="coords">
+                        <span class="coord-chip">Lat: <strong id="coord-lat-text">{{ old('latitud', '-') }}</strong></span>
+                        <span class="coord-chip">Lng: <strong id="coord-lng-text">{{ old('longitud', '-') }}</strong></span>
+                    </div>
                 </div>
 
-                <div class="field span-2">
-                    <label for="longitud">LONGITUD</label>
-                    <input id="longitud" name="longitud" type="number" step="0.0000001" value="{{ old('longitud') }}" placeholder="-74.5400000">
+                <div class="field span-12">
+                    <label for="mapa-propiedad">UBICACION EN MAPA (OPENSTREETMAP)</label>
+                    <div class="map-wrapper">
+                        <div class="map-head">
+                            <p>Haz click en el mapa para ubicar tu propiedad. Puedes arrastrar el marcador para ajustar.</p>
+                        </div>
+                        <div id="mapa-propiedad" aria-label="Mapa para seleccionar ubicacion"></div>
+                        <p class="map-help" id="mapa-direccion-ayuda">Al seleccionar un punto, se intentara autocompletar la direccion con OpenStreetMap.</p>
+                    </div>
+                    <input id="latitud" name="latitud" type="hidden" value="{{ old('latitud') }}">
+                    <input id="longitud" name="longitud" type="hidden" value="{{ old('longitud') }}">
+                    @error('latitud') <span class="error-text">{{ $message }}</span> @enderror
                     @error('longitud') <span class="error-text">{{ $message }}</span> @enderror
                 </div>
             </div>
@@ -413,6 +472,136 @@
 @endsection
 
 @section('scripts')
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <script>
+        (() => {
+            const latInput = document.getElementById('latitud');
+            const lngInput = document.getElementById('longitud');
+            const direccionInput = document.getElementById('direccion');
+            const mapContainer = document.getElementById('mapa-propiedad');
+            const latText = document.getElementById('coord-lat-text');
+            const lngText = document.getElementById('coord-lng-text');
+            const direccionAyuda = document.getElementById('mapa-direccion-ayuda');
+
+            if (!latInput || !lngInput || !mapContainer || typeof L === 'undefined') {
+                return;
+            }
+
+            const peruCenter = [-9.1900, -75.0152];
+            const oldLat = Number.parseFloat(latInput.value);
+            const oldLng = Number.parseFloat(lngInput.value);
+            const hasOldCoords = Number.isFinite(oldLat) && Number.isFinite(oldLng);
+
+            const map = L.map(mapContainer).setView(
+                hasOldCoords ? [oldLat, oldLng] : peruCenter,
+                hasOldCoords ? 15 : 6
+            );
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; OpenStreetMap contributors',
+            }).addTo(map);
+
+            let marker = null;
+            let reverseAbortController = null;
+
+            const setCoordText = (lat, lng) => {
+                if (latText) {
+                    latText.textContent = Number.isFinite(lat) ? lat.toFixed(7) : '-';
+                }
+
+                if (lngText) {
+                    lngText.textContent = Number.isFinite(lng) ? lng.toFixed(7) : '-';
+                }
+            };
+
+            const reverseGeocode = async (lat, lng) => {
+                if (!direccionInput) {
+                    return;
+                }
+
+                if (reverseAbortController) {
+                    reverseAbortController.abort();
+                }
+                reverseAbortController = new AbortController();
+
+                if (direccionAyuda) {
+                    direccionAyuda.textContent = 'Buscando direccion aproximada...';
+                }
+
+                const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}&accept-language=es`;
+
+                try {
+                    const response = await fetch(url, {
+                        headers: {
+                            'Accept': 'application/json',
+                        },
+                        signal: reverseAbortController.signal,
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('No se pudo consultar Nominatim.');
+                    }
+
+                    const data = await response.json();
+                    const direccion = data.display_name ? String(data.display_name).trim() : '';
+
+                    if (direccion !== '') {
+                        direccionInput.value = direccion;
+                        if (direccionAyuda) {
+                            direccionAyuda.textContent = 'Direccion aproximada autocompletada desde OpenStreetMap.';
+                        }
+                    } else if (direccionAyuda) {
+                        direccionAyuda.textContent = 'No se encontro una direccion exacta para este punto.';
+                    }
+                } catch (error) {
+                    if (error.name !== 'AbortError' && direccionAyuda) {
+                        direccionAyuda.textContent = 'No se pudo obtener la direccion automaticamente. Puedes ingresarla manualmente.';
+                    }
+                }
+            };
+
+            const updatePosition = (latlng, withReverse = false) => {
+                const lat = Number(latlng.lat);
+                const lng = Number(latlng.lng);
+
+                latInput.value = lat.toFixed(7);
+                lngInput.value = lng.toFixed(7);
+                setCoordText(lat, lng);
+
+                if (withReverse) {
+                    reverseGeocode(latInput.value, lngInput.value);
+                }
+            };
+
+            const placeMarker = (latlng, withReverse = false) => {
+                // Crea el marcador la primera vez y luego solo actualiza su posicion.
+                if (!marker) {
+                    marker = L.marker(latlng, { draggable: true }).addTo(map);
+
+                    marker.on('dragend', () => {
+                        const current = marker.getLatLng();
+                        updatePosition(current, true);
+                    });
+                } else {
+                    marker.setLatLng(latlng);
+                }
+
+                updatePosition(latlng, withReverse);
+            };
+
+            map.on('click', (event) => {
+                placeMarker(event.latlng, true);
+            });
+
+            if (hasOldCoords) {
+                placeMarker({ lat: oldLat, lng: oldLng }, false);
+            } else {
+                setCoordText(NaN, NaN);
+            }
+        })();
+    </script>
+
     <script>
         (() => {
             const catalog = @json($ubicacionesPeru, JSON_UNESCAPED_UNICODE);

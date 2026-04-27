@@ -2,18 +2,25 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Favorito;
 use App\Models\ImagenPropiedad;
+use App\Models\PortalVisita;
 use App\Models\Propiedad;
 use App\Models\TipoPropiedad;
 use App\Models\Ubicacion;
+use App\Models\Visita;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class PortalController extends Controller
 {
     public function index(Request $request): View
     {
+        $this->registerPortalVisit($request);
+
         $tiposPropiedad = TipoPropiedad::query()
             ->orderBy('nombre')
             ->get(['id', 'nombre']);
@@ -80,6 +87,27 @@ class PortalController extends Controller
             ->limit(8)
             ->get();
 
+        $propiedadesVisibles = $destacadas
+            ->pluck('id')
+            ->merge($propiedades->getCollection()->pluck('id'))
+            ->unique()
+            ->values();
+
+        $favoritasIds = collect();
+        if ($request->user() !== null && $propiedadesVisibles->isNotEmpty()) {
+            $favoritasIds = Favorito::query()
+                ->where('user_id', $request->user()->id)
+                ->whereIn('propiedad_id', $propiedadesVisibles)
+                ->pluck('propiedad_id');
+        }
+
+        $metricasPortal = [
+            'usuarios_visitantes' => PortalVisita::query()
+                ->distinct('visitor_key')
+                ->count('visitor_key'),
+            'clics_propiedades' => Visita::query()->count(),
+        ];
+
         return view('portal.index', [
             'tiposPropiedad' => $tiposPropiedad,
             'filtros' => $filtros,
@@ -87,6 +115,8 @@ class PortalController extends Controller
             'propiedades' => $propiedades,
             'destacadas' => $destacadas,
             'ciudadesTop' => $ciudadesTop,
+            'favoritasIds' => $favoritasIds,
+            'metricasPortal' => $metricasPortal,
         ]);
     }
 
@@ -96,6 +126,8 @@ class PortalController extends Controller
             abort(404);
         }
 
+        $this->registerPropertyClick($request, $propiedad);
+
         $propiedad->loadMissing([
             'usuario:id,name,apellidos,email,telefono,whatsapp',
             'tipoPropiedad:id,nombre',
@@ -103,23 +135,75 @@ class PortalController extends Controller
             'imagenes:id,propiedad_id,ruta_imagen',
             'portadaImagen',
         ]);
+        $propiedad->loadCount(['imagenes', 'contactos', 'favoritos', 'visitas']);
 
-        $relacionadas = Propiedad::query()
-            ->where('estado', 'disponible')
-            ->whereKeyNot($propiedad->id)
-            ->where('tipo_propiedad_id', $propiedad->tipo_propiedad_id)
-            ->with([
-                'tipoPropiedad:id,nombre',
-                'ubicacion:id,departamento,provincia,distrito',
-                'portadaImagen',
-            ])
-            ->latest()
-            ->limit(3)
-            ->get();
+        $esFavorita = false;
+        if ($request->user() !== null) {
+            $esFavorita = Favorito::query()
+                ->where('user_id', $request->user()->id)
+                ->where('propiedad_id', $propiedad->id)
+                ->exists();
+        }
 
         return view('portal.show', [
             'propiedad' => $propiedad,
-            'relacionadas' => $relacionadas,
+            'esFavorita' => $esFavorita,
+        ]);
+    }
+
+    public function registrarClic(Request $request, Propiedad $propiedad): JsonResponse
+    {
+        if ($propiedad->estado !== 'disponible') {
+            abort(404);
+        }
+
+        $this->registerPropertyClick($request, $propiedad);
+
+        return response()->json([
+            'ok' => true,
+            'total_clics' => $propiedad->visitas()->count(),
+        ]);
+    }
+
+    public function toggleFavorito(Request $request, Propiedad $propiedad): JsonResponse
+    {
+        if ($propiedad->estado !== 'disponible') {
+            abort(404);
+        }
+
+        $user = $request->user();
+        if ($user === null) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Debes iniciar sesion para guardar favoritos.',
+            ], 401);
+        }
+
+        $favorito = Favorito::query()
+            ->where('user_id', $user->id)
+            ->where('propiedad_id', $propiedad->id)
+            ->first();
+
+        if ($favorito !== null) {
+            $favorito->delete();
+            $favorita = false;
+        } else {
+            Favorito::create([
+                'user_id' => $user->id,
+                'propiedad_id' => $propiedad->id,
+            ]);
+            $favorita = true;
+        }
+
+        $totalFavoritos = $propiedad->favoritos()->count();
+
+        return response()->json([
+            'ok' => true,
+            'favorita' => $favorita,
+            'total_favoritos' => $totalFavoritos,
+            'message' => $favorita
+                ? 'Propiedad agregada a tus favoritos.'
+                : 'Propiedad eliminada de tus favoritos.',
         ]);
     }
 
@@ -217,5 +301,52 @@ class PortalController extends Controller
         $number = (float) $value;
 
         return $number >= 0 ? $number : null;
+    }
+
+    private function registerPortalVisit(Request $request): void
+    {
+        $visitorKey = $this->resolvePortalVisitorKey($request);
+
+        $alreadyVisitedToday = PortalVisita::query()
+            ->where('visitor_key', $visitorKey)
+            ->whereDate('fecha_visita', now()->toDateString())
+            ->exists();
+
+        if ($alreadyVisitedToday) {
+            return;
+        }
+
+        PortalVisita::create([
+            'user_id' => $request->user()?->id,
+            'visitor_key' => $visitorKey,
+            'session_id' => $request->session()->getId(),
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'fecha_visita' => now(),
+        ]);
+    }
+
+    private function resolvePortalVisitorKey(Request $request): string
+    {
+        if ($request->user() !== null) {
+            return 'user:'.$request->user()->id;
+        }
+
+        $sessionVisitorKey = $request->session()->get('portal_visitor_key');
+        if (! is_string($sessionVisitorKey) || $sessionVisitorKey === '') {
+            $sessionVisitorKey = (string) Str::uuid();
+            $request->session()->put('portal_visitor_key', $sessionVisitorKey);
+        }
+
+        return 'session:'.$sessionVisitorKey;
+    }
+
+    private function registerPropertyClick(Request $request, Propiedad $propiedad): void
+    {
+        Visita::create([
+            'propiedad_id' => $propiedad->id,
+            'user_id' => $request->user()?->id,
+            'fecha_visita' => now(),
+        ]);
     }
 }

@@ -111,6 +111,11 @@ class User extends Authenticatable
         return $this->hasMany(Visita::class, 'user_id');
     }
 
+    public function visitasPortal(): HasMany
+    {
+        return $this->hasMany(PortalVisita::class, 'user_id');
+    }
+
     public function propiedadesFavoritas(): BelongsToMany
     {
         return $this->belongsToMany(Propiedad::class, 'favoritos', 'user_id', 'propiedad_id')->withTimestamps();

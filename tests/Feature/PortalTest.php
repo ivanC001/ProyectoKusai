@@ -26,6 +26,20 @@ class PortalTest extends TestCase
         $response->assertSee($propiedadVisible->titulo);
     }
 
+    public function test_home_registers_unique_portal_visit_per_session(): void
+    {
+        $this->seedPropiedades();
+
+        $firstResponse = $this->get(route('home'));
+        $firstResponse->assertOk();
+        $firstResponse->assertSee('Usuarios que visitaron el portal');
+        $this->assertDatabaseCount('portal_visitas', 1);
+
+        $secondResponse = $this->get(route('home'));
+        $secondResponse->assertOk();
+        $this->assertDatabaseCount('portal_visitas', 1);
+    }
+
     public function test_home_filters_by_operation_and_type(): void
     {
         [$ventaCasa, $alquilerDepartamento] = $this->seedPropiedades();
@@ -67,6 +81,60 @@ class PortalTest extends TestCase
         $response = $this->get(route('portal.propiedades.imagen', [$propiedadVisible, $imagen]));
 
         $response->assertOk();
+    }
+
+    public function test_property_click_endpoint_registers_click(): void
+    {
+        [$propiedadVisible] = $this->seedPropiedades();
+
+        $response = $this->postJson(route('portal.propiedades.click', $propiedadVisible));
+
+        $response->assertOk();
+        $response->assertJson([
+            'ok' => true,
+        ]);
+        $this->assertDatabaseHas('visitas', [
+            'propiedad_id' => $propiedadVisible->id,
+        ]);
+    }
+
+    public function test_authenticated_user_can_toggle_property_favorite(): void
+    {
+        [$propiedadVisible] = $this->seedPropiedades();
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $agregarResponse = $this->postJson(route('portal.propiedades.favoritos.toggle', $propiedadVisible));
+        $agregarResponse->assertOk();
+        $agregarResponse->assertJson([
+            'ok' => true,
+            'favorita' => true,
+        ]);
+        $this->assertDatabaseHas('favoritos', [
+            'user_id' => $user->id,
+            'propiedad_id' => $propiedadVisible->id,
+        ]);
+
+        $quitarResponse = $this->postJson(route('portal.propiedades.favoritos.toggle', $propiedadVisible));
+        $quitarResponse->assertOk();
+        $quitarResponse->assertJson([
+            'ok' => true,
+            'favorita' => false,
+        ]);
+        $this->assertDatabaseMissing('favoritos', [
+            'user_id' => $user->id,
+            'propiedad_id' => $propiedadVisible->id,
+        ]);
+    }
+
+    public function test_guest_cannot_toggle_property_favorite(): void
+    {
+        [$propiedadVisible] = $this->seedPropiedades();
+
+        $response = $this->postJson(route('portal.propiedades.favoritos.toggle', $propiedadVisible));
+
+        $response->assertUnauthorized();
+        $this->assertDatabaseCount('favoritos', 0);
     }
 
     /**
@@ -131,4 +199,3 @@ class PortalTest extends TestCase
         return [$ventaCasa, $alquilerDepartamento, $noDisponible];
     }
 }
-

@@ -6,6 +6,7 @@ use App\Models\ImagenPropiedad;
 use App\Models\Propiedad;
 use App\Models\TipoPropiedad;
 use App\Models\Ubicacion;
+use App\Models\Visita;
 use App\Support\PeruUbigeoCatalog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -65,6 +66,11 @@ class PropiedadController extends Controller
             'disponibles' => $request->user()->propiedades()->where('estado', 'disponible')->count(),
             'reservadas' => $request->user()->propiedades()->where('estado', 'reservado')->count(),
             'vendidas' => $request->user()->propiedades()->where('estado', 'vendido')->count(),
+            'clics' => Visita::query()
+                ->whereHas('propiedad', function ($query) use ($request): void {
+                    $query->where('user_id', $request->user()->id);
+                })
+                ->count(),
         ];
 
         return view('propiedades.mine', [
@@ -182,8 +188,8 @@ class PropiedadController extends Controller
             'tipo' => ['required', 'in:venta,alquiler'],
             'estado' => ['required', 'in:disponible,vendido,reservado'],
             'direccion' => ['required', 'string', 'max:255'],
-            'latitud' => ['nullable', 'numeric', 'between:-90,90'],
-            'longitud' => ['nullable', 'numeric', 'between:-180,180'],
+            'latitud' => ['required', 'numeric', 'between:-90,90'],
+            'longitud' => ['required', 'numeric', 'between:-180,180'],
             'habitaciones' => ['nullable', 'integer', 'min:0'],
             'banos' => ['nullable', 'integer', 'min:0'],
             'area' => ['nullable', 'numeric', 'min:0'],
@@ -216,8 +222,8 @@ class PropiedadController extends Controller
                 'tipo' => $validated['tipo'],
                 'estado' => $validated['estado'],
                 'direccion' => $validated['direccion'],
-                'latitud' => $validated['latitud'] ?? null,
-                'longitud' => $validated['longitud'] ?? null,
+                'latitud' => $validated['latitud'],
+                'longitud' => $validated['longitud'],
                 'habitaciones' => $validated['habitaciones'] ?? null,
                 'banos' => $validated['banos'] ?? null,
                 'area' => $validated['area'] ?? null,
@@ -429,6 +435,23 @@ class PropiedadController extends Controller
         return Storage::disk('public')->response($imagen->ruta_imagen);
     }
 
+    public function detalle(Request $request, Propiedad $propiedad): View
+    {
+        $this->ensureCanManagePropiedad($request, $propiedad);
+
+        $propiedad->loadMissing([
+            'tipoPropiedad:id,nombre',
+            'ubicacion:id,departamento,provincia,distrito',
+            'imagenes:id,propiedad_id,ruta_imagen',
+            'portadaImagen',
+        ]);
+        $propiedad->loadCount(['imagenes', 'contactos', 'favoritos', 'visitas']);
+
+        return view('propiedades.detalle', [
+            'propiedad' => $propiedad,
+        ]);
+    }
+
     public function publicada(Request $request, Propiedad $propiedad): View
     {
         $this->ensureCanManagePropiedad($request, $propiedad);
@@ -517,6 +540,8 @@ class PropiedadController extends Controller
             'array' => 'El campo :attribute debe tener un formato valido.',
             'in' => 'El valor seleccionado para :attribute no es valido.',
             'exists' => 'El :attribute seleccionado no existe.',
+            'latitud.required' => 'Debes seleccionar la ubicacion en el mapa.',
+            'longitud.required' => 'Debes seleccionar la ubicacion en el mapa.',
         ];
     }
 

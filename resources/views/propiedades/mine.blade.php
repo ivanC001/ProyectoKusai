@@ -58,7 +58,7 @@
     }
     .stats {
         display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-columns: repeat(5, minmax(0, 1fr));
         gap: 10px;
         margin-bottom: 16px;
     }
@@ -313,7 +313,7 @@
     }
     @media (max-width: 980px) {
         .stats {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-columns: repeat(3, minmax(0, 1fr));
         }
         .filters {
             grid-template-columns: 1fr 1fr;
@@ -374,6 +374,10 @@
             <article class="stat-card">
                 <p class="stat-label">Vendidas</p>
                 <p class="stat-value">{{ $estadisticas['vendidas'] }}</p>
+            </article>
+            <article class="stat-card">
+                <p class="stat-label">Clics recibidos</p>
+                <p class="stat-value">{{ $estadisticas['clics'] }}</p>
             </article>
         </section>
 
@@ -452,6 +456,8 @@
                                 <span class="chip">{{ $propiedad->tipoPropiedad?->nombre ?? 'Sin tipo' }}</span>
                                 <span class="chip">{{ $propiedad->imagenes_count }} foto(s)</span>
                                 <span class="chip">{{ $propiedad->contactos_count }} contacto(s)</span>
+                                <span class="chip">{{ $propiedad->visitas_count }} clic(s)</span>
+                                <span class="chip">{{ $propiedad->favoritos_count }} favorito(s)</span>
                             </div>
 
                             <div class="card-actions">
@@ -467,6 +473,7 @@
                                 </form>
 
                                 <div class="card-ops">
+                                    <a class="btn-edit" href="{{ route('propiedades.detalle', $propiedad) }}">Detalle</a>
                                     <a class="btn-edit" href="{{ route('propiedades.edit', $propiedad) }}">Editar</a>
                                     <form method="POST" action="{{ route('propiedades.destroy', $propiedad) }}" onsubmit="return confirm('Esta accion eliminara la publicacion. Deseas continuar?');">
                                         @csrf

@@ -189,6 +189,7 @@
             </div>
 
             <div class="actions">
+                <a href="{{ route('propiedades.detalle', $propiedad) }}" class="btn btn-outline">Ver detalle</a>
                 <a href="{{ url('/') }}" class="btn btn-main">Terminar e ir al inicio</a>
                 <a href="{{ route('propiedades.mine') }}" class="btn btn-outline">Ir a mis publicaciones</a>
                 <a href="{{ route('propiedades.create') }}" class="btn btn-outline">Publicar otra propiedad</a>

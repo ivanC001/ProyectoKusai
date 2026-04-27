@@ -322,6 +322,9 @@
                         </summary>
                         <div class="user-dropdown">
                             <a href="{{ route('propiedades.mine') }}" class="user-item">Mis publicaciones</a>
+                            @if (auth()->user()->esAdmin())
+                                <a href="{{ route('admin.PanelAdministrativo') }}" class="user-item">Panel administrativo</a>
+                            @endif
                             <a href="{{ route('profile.edit') }}" class="user-item">Ver y editar perfil</a>
                             <form method="POST" action="{{ route('logout') }}" class="logout-inline">
                                 @csrf
@@ -355,6 +358,9 @@
                             </div>
                         </div>
                         <a href="{{ route('propiedades.mine') }}" class="client-mobile-link">Mis publicaciones</a>
+                        @if (auth()->user()->esAdmin())
+                            <a href="{{ route('admin.PanelAdministrativo') }}" class="client-mobile-link">Panel administrativo</a>
+                        @endif
                         <a href="{{ route('profile.edit') }}" class="client-mobile-link">Ver y editar perfil</a>
                         <a href="{{ route('propiedades.create') }}" class="client-mobile-link">Publica gratis</a>
                         <form method="POST" action="{{ route('logout') }}" class="client-mobile-form">
@@ -385,4 +391,3 @@
     @yield('scripts')
 </body>
 </html>
-
