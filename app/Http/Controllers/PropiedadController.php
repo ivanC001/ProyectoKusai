@@ -6,6 +6,7 @@ use App\Models\ImagenPropiedad;
 use App\Models\Propiedad;
 use App\Models\TipoPropiedad;
 use App\Models\Ubicacion;
+use App\Support\PeruUbigeoCatalog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +16,10 @@ use Illuminate\View\View;
 
 class PropiedadController extends Controller
 {
+    public function __construct(private PeruUbigeoCatalog $ubigeoCatalog)
+    {
+    }
+
     public function misPublicaciones(Request $request): View
     {
         $estado = $request->string('estado')->toString();
@@ -34,7 +39,7 @@ class PropiedadController extends Controller
             ->with([
                 'tipoPropiedad:id,nombre',
                 'ubicacion:id,departamento,provincia,distrito',
-                'imagenes:id,propiedad_id,ruta_imagen',
+                'portadaImagen',
             ])
             ->withCount(['imagenes', 'contactos', 'favoritos', 'visitas']);
 
@@ -156,6 +161,7 @@ class PropiedadController extends Controller
             'puedeGuardar' => $tiposPropiedad->isNotEmpty() && count($fotosTemporales) > 0,
             'fotosTemporales' => $fotosTemporales,
             'fotosCount' => count($fotosTemporales),
+            'ubicacionesPeru' => $this->ubigeoCatalog->hierarchy(),
         ]);
     }
 
@@ -186,6 +192,15 @@ class PropiedadController extends Controller
             'provincia' => ['required', 'string', 'max:120'],
             'distrito' => ['required', 'string', 'max:120'],
         ], $this->datosMessages(), $this->datosAttributes());
+
+        $ubicacionPeru = $this->resolveUbicacionPeru($validated);
+        if ($ubicacionPeru === null) {
+            return back()->withErrors($this->ubicacionErrors($validated))->withInput();
+        }
+
+        $validated['departamento'] = $ubicacionPeru['departamento'];
+        $validated['provincia'] = $ubicacionPeru['provincia'];
+        $validated['distrito'] = $ubicacionPeru['distrito'];
 
         [$propiedad, $fotosCount] = DB::transaction(function () use ($validated, $request, $fotosTemporales) {
             $ubicacion = Ubicacion::firstOrCreate([
@@ -240,6 +255,178 @@ class PropiedadController extends Controller
         return redirect()
             ->route('propiedades.publicada', $propiedad)
             ->with('fotos_count', $fotosCount);
+    }
+
+    public function edit(Request $request, Propiedad $propiedad): View
+    {
+        $this->ensureCanManagePropiedad($request, $propiedad);
+
+        $tiposPropiedad = TipoPropiedad::query()
+            ->orderBy('nombre')
+            ->get(['id', 'nombre']);
+
+        $propiedad->loadMissing([
+            'tipoPropiedad:id,nombre',
+            'ubicacion:id,departamento,provincia,distrito',
+            'imagenes:id,propiedad_id,ruta_imagen',
+            'portadaImagen',
+        ]);
+        $propiedad->loadCount('imagenes');
+
+        return view('propiedades.edit', [
+            'propiedad' => $propiedad,
+            'tiposPropiedad' => $tiposPropiedad,
+            'ubicacionesPeru' => $this->ubigeoCatalog->hierarchy(),
+        ]);
+    }
+
+    public function update(Request $request, Propiedad $propiedad): RedirectResponse
+    {
+        $this->ensureCanManagePropiedad($request, $propiedad);
+
+        $validated = $request->validate([
+            'titulo' => ['required', 'string', 'max:255'],
+            'descripcion' => ['required', 'string', 'min:20'],
+            'precio' => ['required', 'numeric', 'min:0'],
+            'tipo' => ['required', 'in:venta,alquiler'],
+            'estado' => ['required', 'in:disponible,vendido,reservado'],
+            'direccion' => ['required', 'string', 'max:255'],
+            'latitud' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitud' => ['nullable', 'numeric', 'between:-180,180'],
+            'habitaciones' => ['nullable', 'integer', 'min:0'],
+            'banos' => ['nullable', 'integer', 'min:0'],
+            'area' => ['nullable', 'numeric', 'min:0'],
+            'tipo_propiedad_id' => ['required', 'exists:tipos_propiedad,id'],
+            'departamento' => ['required', 'string', 'max:120'],
+            'provincia' => ['required', 'string', 'max:120'],
+            'distrito' => ['required', 'string', 'max:120'],
+            'remover_imagenes' => ['nullable', 'array'],
+            'remover_imagenes.*' => ['integer', 'exists:imagenes_propiedad,id'],
+            'nuevas_fotos' => ['nullable', 'array'],
+            'nuevas_fotos.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+        ], $this->datosMessages(), $this->datosAttributes());
+
+        $ubicacionPeru = $this->resolveUbicacionPeru($validated);
+        if ($ubicacionPeru === null) {
+            return back()->withErrors($this->ubicacionErrors($validated))->withInput();
+        }
+
+        $validated['departamento'] = $ubicacionPeru['departamento'];
+        $validated['provincia'] = $ubicacionPeru['provincia'];
+        $validated['distrito'] = $ubicacionPeru['distrito'];
+
+        $imagenesActuales = $propiedad->imagenes()
+            ->get(['id', 'ruta_imagen']);
+
+        $idsActuales = $imagenesActuales
+            ->pluck('id')
+            ->map(static fn ($id): int => (int) $id);
+
+        $idsRemover = collect($validated['remover_imagenes'] ?? [])
+            ->map(static fn ($id): int => (int) $id)
+            ->unique()
+            ->values();
+
+        if ($idsRemover->diff($idsActuales)->isNotEmpty()) {
+            return back()
+                ->withErrors(['remover_imagenes' => 'Seleccionaste fotos no validas para eliminar.'])
+                ->withInput();
+        }
+
+        $nuevasFotos = $request->file('nuevas_fotos', []);
+
+        $totalFinalFotos = $imagenesActuales->count() - $idsRemover->count() + count($nuevasFotos);
+
+        if ($totalFinalFotos <= 0) {
+            return back()
+                ->withErrors(['nuevas_fotos' => 'La publicacion debe conservar al menos una foto.'])
+                ->withInput();
+        }
+
+        if ($totalFinalFotos > 12) {
+            return back()
+                ->withErrors(['nuevas_fotos' => 'Puedes tener como maximo 12 fotos por publicacion.'])
+                ->withInput();
+        }
+
+        $idsRemoverArray = $idsRemover->all();
+        $fotosAgregadas = 0;
+
+        DB::transaction(function () use ($validated, $propiedad, $idsRemoverArray, $nuevasFotos, &$fotosAgregadas) {
+            $ubicacion = Ubicacion::firstOrCreate([
+                'departamento' => trim($validated['departamento']),
+                'provincia' => trim($validated['provincia']),
+                'distrito' => trim($validated['distrito']),
+            ]);
+
+            $propiedad->update([
+                'titulo' => $validated['titulo'],
+                'descripcion' => $validated['descripcion'],
+                'precio' => $validated['precio'],
+                'tipo' => $validated['tipo'],
+                'estado' => $validated['estado'],
+                'direccion' => $validated['direccion'],
+                'latitud' => $validated['latitud'] ?? null,
+                'longitud' => $validated['longitud'] ?? null,
+                'habitaciones' => $validated['habitaciones'] ?? null,
+                'banos' => $validated['banos'] ?? null,
+                'area' => $validated['area'] ?? null,
+                'tipo_propiedad_id' => $validated['tipo_propiedad_id'],
+                'ubicacion_id' => $ubicacion->id,
+            ]);
+
+            if ($idsRemoverArray !== []) {
+                $imagenesAEliminar = $propiedad->imagenes()
+                    ->whereIn('id', $idsRemoverArray)
+                    ->get(['id', 'ruta_imagen']);
+
+                foreach ($imagenesAEliminar as $imagen) {
+                    Storage::disk('public')->delete($imagen->ruta_imagen);
+
+                    $imagen->delete();
+                }
+            }
+
+            foreach ($nuevasFotos as $foto) {
+                $extension = $foto->getClientOriginalExtension() ?: $foto->extension() ?: 'jpg';
+                $nombreArchivo = Str::uuid().'.'.$extension;
+
+                $rutaFinal = $foto->storeAs('propiedades', $nombreArchivo, 'public');
+
+                ImagenPropiedad::create([
+                    'ruta_imagen' => $rutaFinal,
+                    'propiedad_id' => $propiedad->id,
+                ]);
+
+                $fotosAgregadas++;
+            }
+        });
+
+        $fotosEliminadas = count($idsRemoverArray);
+
+        $mensaje = 'Publicacion actualizada correctamente.';
+        if ($fotosAgregadas > 0 || $fotosEliminadas > 0) {
+            $mensaje .= ' Fotos: +'.$fotosAgregadas.' / -'.$fotosEliminadas.'.';
+        }
+
+        return redirect()
+            ->route('propiedades.mine')
+            ->with('success', $mensaje);
+    }
+
+    public function imagen(Request $request, Propiedad $propiedad, ImagenPropiedad $imagen)
+    {
+        $this->ensureCanManagePropiedad($request, $propiedad);
+
+        if ($imagen->propiedad_id !== $propiedad->id) {
+            abort(404);
+        }
+
+        if (! Storage::disk('public')->exists($imagen->ruta_imagen)) {
+            abort(404);
+        }
+
+        return Storage::disk('public')->response($imagen->ruta_imagen);
     }
 
     public function publicada(Request $request, Propiedad $propiedad): View
@@ -321,9 +508,13 @@ class PropiedadController extends Controller
             'integer' => 'El campo :attribute debe ser un numero entero.',
             'max.string' => 'El campo :attribute no puede superar :max caracteres.',
             'max.numeric' => 'El campo :attribute no puede ser mayor a :max.',
+            'max.file' => 'El archivo de :attribute no puede superar :max KB.',
             'min.string' => 'El campo :attribute debe tener al menos :min caracteres.',
             'min.numeric' => 'El campo :attribute debe ser mayor o igual a :min.',
             'between.numeric' => 'El campo :attribute debe estar entre :min y :max.',
+            'image' => 'El campo :attribute debe ser una imagen valida.',
+            'mimes' => 'El campo :attribute debe ser JPG, JPEG, PNG o WEBP.',
+            'array' => 'El campo :attribute debe tener un formato valido.',
             'in' => 'El valor seleccionado para :attribute no es valido.',
             'exists' => 'El :attribute seleccionado no existe.',
         ];
@@ -347,6 +538,10 @@ class PropiedadController extends Controller
             'departamento' => 'departamento',
             'provincia' => 'provincia',
             'distrito' => 'distrito',
+            'remover_imagenes' => 'fotos a eliminar',
+            'remover_imagenes.*' => 'foto a eliminar',
+            'nuevas_fotos' => 'nuevas fotos',
+            'nuevas_fotos.*' => 'nueva foto',
         ];
     }
 
@@ -357,5 +552,63 @@ class PropiedadController extends Controller
         if ($propiedad->user_id !== $user->id && ! $user->esAdmin()) {
             abort(403);
         }
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     * @return array{departamento: string, provincia: string, distrito: string}|null
+     */
+    private function resolveUbicacionPeru(array $validated): ?array
+    {
+        $departamento = $this->ubigeoCatalog->resolveDepartamento((string) ($validated['departamento'] ?? ''));
+        if ($departamento === null) {
+            return null;
+        }
+
+        $provincia = $this->ubigeoCatalog->resolveProvincia($departamento, (string) ($validated['provincia'] ?? ''));
+        if ($provincia === null) {
+            return null;
+        }
+
+        $distrito = $this->ubigeoCatalog->resolveDistrito($departamento, $provincia, (string) ($validated['distrito'] ?? ''));
+        if ($distrito === null) {
+            return null;
+        }
+
+        return [
+            'departamento' => $departamento,
+            'provincia' => $provincia,
+            'distrito' => $distrito,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     * @return array<string, string>
+     */
+    private function ubicacionErrors(array $validated): array
+    {
+        $erroresUbicacion = [];
+
+        $departamento = $this->ubigeoCatalog->resolveDepartamento((string) ($validated['departamento'] ?? ''));
+        if ($departamento === null) {
+            $erroresUbicacion['departamento'] = 'Selecciona una region valida del Peru.';
+        }
+
+        $provincia = $departamento !== null
+            ? $this->ubigeoCatalog->resolveProvincia($departamento, (string) ($validated['provincia'] ?? ''))
+            : null;
+        if ($provincia === null) {
+            $erroresUbicacion['provincia'] = 'Selecciona una provincia valida para la region elegida.';
+        }
+
+        $distrito = ($departamento !== null && $provincia !== null)
+            ? $this->ubigeoCatalog->resolveDistrito($departamento, $provincia, (string) ($validated['distrito'] ?? ''))
+            : null;
+        if ($distrito === null) {
+            $erroresUbicacion['distrito'] = 'Selecciona un distrito valido para la provincia elegida.';
+        }
+
+        return $erroresUbicacion;
     }
 }

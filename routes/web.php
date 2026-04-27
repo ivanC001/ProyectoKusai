@@ -1,13 +1,19 @@
 <?php
 
 use App\Http\Controllers\AdminTipoPropiedadController;
+use App\Http\Controllers\PortalController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PropiedadController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', [PortalController::class, 'index'])->name('home');
+Route::get('/portal/propiedades/{propiedad}', [PortalController::class, 'show'])
+    ->whereNumber('propiedad')
+    ->name('portal.propiedades.show');
+Route::get('/portal/propiedades/{propiedad}/imagenes/{imagen}', [PortalController::class, 'imagen'])
+    ->whereNumber('propiedad')
+    ->whereNumber('imagen')
+    ->name('portal.propiedades.imagen');
 
 Route::get('/dashboard', function () {
     return view('dashboard');
@@ -15,6 +21,10 @@ Route::get('/dashboard', function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('/mis-publicaciones', [PropiedadController::class, 'misPublicaciones'])->name('propiedades.mine');
+    Route::get('/mis-publicaciones/{propiedad}/editar', [PropiedadController::class, 'edit'])->name('propiedades.edit');
+    Route::patch('/mis-publicaciones/{propiedad}', [PropiedadController::class, 'update'])->name('propiedades.update');
+    Route::get('/mis-publicaciones/{propiedad}/imagenes/{imagen}', [PropiedadController::class, 'imagen'])
+        ->name('propiedades.imagen.show');
     Route::patch('/mis-publicaciones/{propiedad}/estado', [PropiedadController::class, 'actualizarEstado'])
         ->name('propiedades.estado.update');
     Route::delete('/mis-publicaciones/{propiedad}', [PropiedadController::class, 'destroy'])

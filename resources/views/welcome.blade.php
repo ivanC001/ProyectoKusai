@@ -544,7 +544,7 @@
                     <summary class="btn btn-outline user-summary">
                         <span class="user-avatar">
                             @if (auth()->user()->tieneFotoPerfil())
-                                <img src="{{ route('profile.photo') }}" alt="Foto">
+                                <img src="{{ route('profile.photo', ['v' => optional(auth()->user()->updated_at)->timestamp]) }}" alt="Foto">
                             @else
                                 {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
                             @endif

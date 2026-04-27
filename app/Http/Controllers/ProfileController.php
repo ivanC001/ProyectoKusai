@@ -33,7 +33,11 @@ class ProfileController extends Controller
             abort(404);
         }
 
-        return Storage::disk('public')->response($user->foto_perfil);
+        return response()->file(storage_path('app/public/'.$user->foto_perfil), [
+            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
+        ]);
     }
 
     /**

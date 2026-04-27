@@ -251,6 +251,21 @@
         padding: 8px 10px;
         cursor: pointer;
     }
+    .card-ops {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .btn-edit {
+        border: 1px solid #c6d7ce;
+        border-radius: 9px;
+        background: #f8fbf9;
+        color: #1f553f;
+        font-size: .82rem;
+        font-weight: 800;
+        padding: 8px 10px;
+        text-decoration: none;
+    }
     .empty {
         border-radius: 14px;
         border: 1px dashed #b9cec2;
@@ -408,7 +423,7 @@
             <section class="grid">
                 @foreach ($propiedades as $propiedad)
                     @php
-                        $portada = $propiedad->imagenes->first();
+                        $portada = $propiedad->portadaImagen;
                         $estadoClase = match ($propiedad->estado) {
                             'reservado' => 'state-reservado',
                             'vendido' => 'state-vendido',
@@ -418,7 +433,7 @@
 
                     <article class="card">
                         @if ($portada)
-                            <img class="cover" src="{{ asset('storage/'.$portada->ruta_imagen) }}" alt="Portada de {{ $propiedad->titulo }}">
+                            <img class="cover" src="{{ route('propiedades.imagen.show', [$propiedad, $portada]) }}" alt="Portada de {{ $propiedad->titulo }}">
                         @else
                             <div class="cover-empty">Sin foto de portada</div>
                         @endif
@@ -451,11 +466,14 @@
                                     <button class="btn-save" type="submit">Guardar</button>
                                 </form>
 
-                                <form method="POST" action="{{ route('propiedades.destroy', $propiedad) }}" onsubmit="return confirm('Esta accion eliminara la publicacion. Deseas continuar?');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button class="btn-delete" type="submit">Eliminar</button>
-                                </form>
+                                <div class="card-ops">
+                                    <a class="btn-edit" href="{{ route('propiedades.edit', $propiedad) }}">Editar</a>
+                                    <form method="POST" action="{{ route('propiedades.destroy', $propiedad) }}" onsubmit="return confirm('Esta accion eliminara la publicacion. Deseas continuar?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="btn-delete" type="submit">Eliminar</button>
+                                    </form>
+                                </div>
                             </div>
                         </div>
                     </article>

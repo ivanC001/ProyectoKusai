@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class ProfileTest extends TestCase
@@ -83,6 +85,29 @@ class ProfileTest extends TestCase
             ->assertRedirect('/profile');
 
         $this->assertSame('12345678', $user->fresh()->dni);
+    }
+
+    public function test_profile_photo_can_be_updated(): void
+    {
+        Storage::fake('public');
+
+        $user = User::factory()->create();
+
+        $response = $this
+            ->actingAs($user)
+            ->patch('/profile', [
+                'name' => 'Test User',
+                'foto_perfil' => UploadedFile::fake()->image('avatar.jpg', 300, 300),
+            ]);
+
+        $response
+            ->assertSessionHasNoErrors()
+            ->assertRedirect('/profile');
+
+        $user->refresh();
+
+        $this->assertNotNull($user->foto_perfil);
+        Storage::disk('public')->assertExists($user->foto_perfil);
     }
 
     public function test_user_can_delete_their_account(): void

@@ -43,6 +43,39 @@
         background: rgba(255, 255, 255, .2);
     }
 
+    .profile-photo-picker {
+        width: 88px;
+        height: 88px;
+        border-radius: 50%;
+        border: 3px solid rgba(255, 255, 255, .45);
+        display: block;
+        cursor: pointer;
+        overflow: hidden;
+        position: relative;
+        background: rgba(255, 255, 255, .12);
+    }
+
+    .profile-photo-picker .profile-photo,
+    .profile-photo-picker .profile-avatar {
+        width: 100%;
+        height: 100%;
+        border: none;
+    }
+
+    .camera-badge-head {
+        position: absolute;
+        right: 4px;
+        bottom: 4px;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background: rgba(11, 44, 68, .92);
+        border: 1px solid rgba(255, 255, 255, .5);
+        font-size: .78rem;
+    }
+
     .profile-head h1 {
         margin: 0;
         font-family: "Fraunces", serif;
@@ -194,6 +227,25 @@
         padding-left: 18px;
     }
 
+    .photo-note {
+        color: #547466;
+        font-size: .85rem;
+        display: grid;
+        gap: 2px;
+    }
+
+    .input-file-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+        padding: 0;
+        margin: -1px;
+    }
+
     .logout-form {
         margin: 0;
     }
@@ -215,11 +267,21 @@
 @section('content')
 <div class="profile-wrap">
     <section class="profile-head">
-        @if ($user->tieneFotoPerfil())
-            <img class="profile-photo" src="{{ route('profile.photo') }}" alt="Foto de perfil">
-        @else
-            <div class="profile-avatar">{{ strtoupper(substr($user->name, 0, 1)) }}</div>
-        @endif
+        <label for="foto_perfil" class="profile-photo-picker" title="Cambiar foto de perfil">
+            @if ($user->tieneFotoPerfil())
+                <img
+                    id="foto-preview-top"
+                    class="profile-photo"
+                    src="{{ route('profile.photo', ['v' => optional($user->updated_at)->timestamp]) }}"
+                    alt="Foto de perfil"
+                >
+                <div id="foto-preview-top-avatar" class="profile-avatar" style="display:none;">{{ strtoupper(substr($user->name, 0, 1)) }}</div>
+            @else
+                <div id="foto-preview-top-avatar" class="profile-avatar">{{ strtoupper(substr($user->name, 0, 1)) }}</div>
+                <img id="foto-preview-top" class="profile-photo" alt="Vista previa de foto de perfil" style="display:none;">
+            @endif
+            <span class="camera-badge-head">&#128247;</span>
+        </label>
 
         <div>
             <h1>{{ $user->name }} {{ $user->apellidos }}</h1>
@@ -306,12 +368,17 @@
 
                     <div class="field full">
                         <label for="foto_perfil">Foto de perfil</label>
-                        <input class="input" id="foto_perfil" type="file" name="foto_perfil" accept=".jpg,.jpeg,.png,.webp">
+                        <div class="photo-note">
+                            <span>Haz clic en la foto de la cabecera para cambiarla.</span>
+                            <span>Luego presiona "Guardar cambios" para aplicar.</span>
+                            <span>Formatos: JPG, JPEG, PNG, WEBP. Maximo: 4 MB.</span>
+                        </div>
+                        <input class="input-file-hidden" id="foto_perfil" type="file" name="foto_perfil" accept=".jpg,.jpeg,.png,.webp">
                     </div>
                 </div>
 
-                <div class="actions">
-                    <a href="{{ route('propiedades.create') }}" class="btn btn-outline">Publica gratis</a>
+                <div class="actions" style="display: flex; justify-content: flex-end;">
+                    <!-- <a href="{{ route('propiedades.create') }}" class="btn btn-outline">Publica gratis</a> -->
                     <button class="btn btn-main" type="submit">Guardar cambios</button>
                 </div>
             </form>
@@ -354,19 +421,54 @@
                     </div>
                 </div>
 
-                <div class="actions">
-                    <a href="{{ route('propiedades.create') }}" class="btn btn-outline">Publica gratis</a>
-                    <button class="btn btn-main" type="submit">Actualizar contrasena</button>
-                </div>
+                <div class="actions" style="display: flex; justify-content: flex-end;">
+    <button class="btn btn-main" type="submit">Actualizar contraseña</button>
+</div>
             </form>
 
-            <div class="actions" style="margin-top: 10px;">
+            <!-- <div class="actions" style="margin-top: 10px;">
                 <form method="POST" action="{{ route('logout') }}" class="logout-form">
                     @csrf
                     <button class="btn btn-danger" type="submit">Cerrar sesion</button>
                 </form>
-            </div>
+            </div> -->
         </article>
     </section>
 </div>
+@endsection
+
+@section('scripts')
+<script>
+    (() => {
+        const input = document.getElementById('foto_perfil');
+        const previewTop = document.getElementById('foto-preview-top');
+        const avatarTop = document.getElementById('foto-preview-top-avatar');
+
+        if (!input || !previewTop) {
+            return;
+        }
+
+        input.addEventListener('change', () => {
+            const file = input.files && input.files[0];
+            if (!file || !file.type.startsWith('image/')) {
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                if (!event.target || typeof event.target.result !== 'string') {
+                    return;
+                }
+
+                previewTop.src = event.target.result;
+                previewTop.style.display = 'block';
+
+                if (avatarTop) {
+                    avatarTop.style.display = 'none';
+                }
+            };
+            reader.readAsDataURL(file);
+        });
+    })();
+</script>
 @endsection

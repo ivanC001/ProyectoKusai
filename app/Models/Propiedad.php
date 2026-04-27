@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Propiedad extends Model
@@ -59,6 +60,11 @@ class Propiedad extends Model
     public function imagenes(): HasMany
     {
         return $this->hasMany(ImagenPropiedad::class, 'propiedad_id');
+    }
+
+    public function portadaImagen(): HasOne
+    {
+        return $this->hasOne(ImagenPropiedad::class, 'propiedad_id')->oldestOfMany();
     }
 
     public function contactos(): HasMany
