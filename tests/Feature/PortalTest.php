@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Favorito;
 use App\Models\ImagenPropiedad;
 use App\Models\Propiedad;
 use App\Models\TipoPropiedad;
@@ -32,7 +33,6 @@ class PortalTest extends TestCase
 
         $firstResponse = $this->get(route('home'));
         $firstResponse->assertOk();
-        $firstResponse->assertSee('Usuarios que visitaron el portal');
         $this->assertDatabaseCount('portal_visitas', 1);
 
         $secondResponse = $this->get(route('home'));
@@ -48,6 +48,24 @@ class PortalTest extends TestCase
             'operacion' => 'alquiler',
             'tipo_propiedad_id' => $alquilerDepartamento->tipo_propiedad_id,
         ]));
+
+        $response->assertOk();
+        $response->assertSee($alquilerDepartamento->titulo);
+        $response->assertDontSee($ventaCasa->titulo);
+    }
+
+    public function test_authenticated_user_can_filter_home_by_favorites(): void
+    {
+        [$ventaCasa, $alquilerDepartamento] = $this->seedPropiedades();
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        Favorito::query()->create([
+            'user_id' => $user->id,
+            'propiedad_id' => $alquilerDepartamento->id,
+        ]);
+
+        $response = $this->get(route('home', ['favoritos' => 1]));
 
         $response->assertOk();
         $response->assertSee($alquilerDepartamento->titulo);

@@ -1,0 +1,42 @@
+{
+  "slug": "soporte",
+  "title": "Soporte",
+  "updated_at": "2026-04-28",
+  "summary": "Canales oficiales para ayudarte con uso de la plataforma, cuenta, publicaciones y reportes.",
+  "sections": [
+    {
+      "title": "Canales de atencion",
+      "paragraphs": [
+        "Nuestro soporte esta disponible para consultas de uso de la plataforma y soporte tecnico basico."
+      ],
+      "bullets": [
+        "Correo: contacto@kusay.pe",
+        "Horario referencial: lunes a viernes, 9:00 a 18:00",
+        "Tiempo de respuesta estimado: 24 a 72 horas habiles"
+      ]
+    },
+    {
+      "title": "Que tipo de casos atendemos",
+      "paragraphs": [
+        "Atendemos incidencias tecnicas, problemas de acceso, errores en publicaciones y consultas sobre funciones."
+      ],
+      "bullets": [
+        "Recuperacion de acceso a cuenta",
+        "Errores al publicar o editar propiedades",
+        "Soporte sobre favoritos, clics y panel administrativo",
+        "Reporte de perfiles o avisos sospechosos"
+      ]
+    },
+    {
+      "title": "Alcance del soporte",
+      "paragraphs": [
+        "Soporte no participa en negociaciones privadas ni en validacion de pagos entre usuarios."
+      ],
+      "bullets": [
+        "No gestionamos depositos ni transferencias",
+        "No actuamos como intermediarios legales en compraventas",
+        "Solo facilitamos el contacto entre compradores y vendedores"
+      ]
+    }
+  ]
+}

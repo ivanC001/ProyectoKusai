@@ -1,0 +1,41 @@
+{
+  "slug": "centro-ayuda",
+  "title": "Centro de ayuda",
+  "updated_at": "2026-04-28",
+  "summary": "Preguntas frecuentes y recomendaciones para publicar y contactar de forma segura.",
+  "sections": [
+    {
+      "title": "Publicar una propiedad",
+      "paragraphs": [
+        "Para publicar, inicia sesion y usa el boton Publica gratis. Completa datos reales, precio y ubicacion."
+      ],
+      "bullets": [
+        "Sube fotos claras y actuales",
+        "Describe area, estado y caracteristicas importantes",
+        "Mantiene actualizado el estado de disponible o vendido"
+      ]
+    },
+    {
+      "title": "Gestion de cuenta",
+      "paragraphs": [
+        "Desde tu perfil puedes actualizar datos, foto y seguridad basica de tu cuenta."
+      ],
+      "bullets": [
+        "Usa una contrasena robusta",
+        "No compartas codigos de verificacion",
+        "Si detectas actividad rara, cambia tu contrasena"
+      ]
+    },
+    {
+      "title": "Recomendaciones de seguridad",
+      "paragraphs": [
+        "Antes de cualquier pago, verifica identidad del contacto y documentacion del inmueble."
+      ],
+      "bullets": [
+        "No realices depositos sin contrato y validacion legal",
+        "Evita pagos por urgencia o presion",
+        "Coordina visitas en lugares seguros"
+      ]
+    }
+  ]
+}

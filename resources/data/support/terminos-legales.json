@@ -1,0 +1,43 @@
+{
+  "slug": "terminos-legales",
+  "title": "Terminos legales",
+  "updated_at": "2026-04-28",
+  "summary": "Alcance legal del servicio y descargo de responsabilidad frente a operaciones entre usuarios.",
+  "sections": [
+    {
+      "title": "Naturaleza del servicio",
+      "paragraphs": [
+        "Kusay.pe es un portal de anuncios y contacto. No representa a compradores ni vendedores.",
+        "No brindamos asesoria legal, financiera, notarial ni tributaria."
+      ],
+      "bullets": [
+        "Servicio principal: publicacion de avisos",
+        "Servicio principal: canal de contacto entre usuarios"
+      ]
+    },
+    {
+      "title": "Descargo por estafas y depositos",
+      "paragraphs": [
+        "Kusay.pe no se hace responsable por posibles estafas, fraudes, enganos, depositos, adelantos, transferencias o perdidas derivadas de acuerdos entre usuarios.",
+        "Toda entrega de dinero se realiza bajo exclusiva responsabilidad de las partes involucradas."
+      ],
+      "bullets": [
+        "No custodiamos dinero ni documentos",
+        "No validamos autenticidad de cada ofertante en tiempo real",
+        "No garantizamos cumplimiento de acuerdos privados"
+      ]
+    },
+    {
+      "title": "Recomendaciones obligatorias para usuarios",
+      "paragraphs": [
+        "Antes de pagar o firmar, el usuario debe realizar validaciones independientes y usar asesoria profesional cuando sea necesario."
+      ],
+      "bullets": [
+        "Verificar identidad con documentos oficiales",
+        "Validar la titularidad y cargas del inmueble",
+        "Evitar depositos sin contrato formal",
+        "Usar notaria y asesoria legal en operaciones relevantes"
+      ]
+    }
+  ]
+}

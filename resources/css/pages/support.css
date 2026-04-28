@@ -1,0 +1,84 @@
+.support-page {
+    padding: 18px 0 8px;
+}
+
+.support-wrap {
+    width: min(980px, 94vw);
+    margin: 0 auto;
+    display: grid;
+    gap: 14px;
+}
+
+.support-header {
+    border: 1px solid #c8d9d0;
+    border-radius: 16px;
+    background: #ffffff;
+    padding: 18px 20px;
+}
+
+.support-tag {
+    margin: 0;
+    color: #5a7d6e;
+    font-size: 0.76rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.support-header h1 {
+    margin: 6px 0 8px;
+    color: #194733;
+    font-size: clamp(1.4rem, 2.2vw, 2rem);
+    line-height: 1.15;
+}
+
+.support-summary {
+    margin: 0;
+    color: #4e6f61;
+    line-height: 1.55;
+}
+
+.support-date {
+    margin: 12px 0 0;
+    color: #6f8f81;
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.support-card {
+    border: 1px solid #c8d9d0;
+    border-radius: 14px;
+    background: #ffffff;
+    padding: 16px 18px;
+}
+
+.support-card h2 {
+    margin: 0 0 8px;
+    color: #1c4d38;
+    font-size: 1.06rem;
+    line-height: 1.2;
+}
+
+.support-card p {
+    margin: 0 0 8px;
+    color: #37594b;
+    font-size: 0.93rem;
+    line-height: 1.62;
+}
+
+.support-card p:last-child {
+    margin-bottom: 0;
+}
+
+.support-card ul {
+    margin: 2px 0 0;
+    padding-left: 1.1rem;
+    display: grid;
+    gap: 7px;
+}
+
+.support-card li {
+    color: #35584a;
+    font-size: 0.91rem;
+    line-height: 1.5;
+}

@@ -1,68 +1,18 @@
-﻿<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kusay.pe | Portal inmobiliario</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    @vite('resources/css/pages/welcome.css')
-</head>
-<body>
-    <header id="nav">
-        <a href="#" class="logo"><span class="logo-icon">ðŸŒ¿</span>Kusay<span class="dot">.</span><span class="pe">pe</span></a>
-        <ul class="nav-links">
-            <li><a class="active" href="#props">Propiedades</a></li>
-            <li><a href="#ciudades">Ciudades</a></li>
-            <li><a href="#publicar">Como publicar</a></li>
-            <li><a href="#destacadas">Destacadas</a></li>
-        </ul>
-        <div class="nav-actions">
-            @auth
-                <a href="{{ route('propiedades.mine') }}" class="btn btn-outline">Mis publicaciones</a>
-                <details class="user-menu">
-                    <summary class="btn btn-outline user-summary">
-                        <span class="user-avatar">
-                            @if (auth()->user()->tieneFotoPerfil())
-                                <img src="{{ route('profile.photo', ['v' => optional(auth()->user()->updated_at)->timestamp]) }}" alt="Foto">
-                            @else
-                                {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
-                            @endif
-                        </span>
-                        <span class="user-fullname">{{ trim(auth()->user()->name.' '.auth()->user()->apellidos) }}</span>
-                        <span class="user-caret">â–¼</span>
-                    </summary>
-                    <div class="user-dropdown">
-                        <a href="{{ route('propiedades.mine') }}" class="user-item">Mis publicaciones</a>
-                        @if (auth()->user()->esAdmin())
-                            <a href="{{ route('admin.PanelAdministrativo') }}" class="user-item">Panel administrativo</a>
-                        @endif
-                        <a href="{{ route('profile.edit') }}" class="user-item">Ver y editar perfil</a>
-                        <form method="POST" action="{{ route('logout') }}" class="logout-inline">
-                            @csrf
-                            <button type="submit" class="user-item">Cerrar sesion</button>
-                        </form>
-                    </div>
-                </details>
-                <a href="{{ route('propiedades.create') }}" class="btn btn-main">Publica gratis</a>
-            @else
-                <a href="{{ route('login') }}" class="btn btn-outline">Iniciar sesion</a>
-                <a href="{{ route('register') }}" class="btn btn-main">Publica gratis</a>
-            @endauth
-        </div>
-    </header>
+@extends('layouts.client')
 
-    <section class="quick-nav">
+@section('title', 'Kusay.pe | Portal inmobiliario')
+
+@section('content')
+<section class="quick-nav">
         <div class="quick-categories">
-            <button class="cat-btn active" type="button"><span class="cat-ic">ðŸ </span>Todos</button>
-            <button class="cat-btn" type="button"><span class="cat-ic">ðŸŒ±</span>Terrenos</button>
-            <button class="cat-btn" type="button"><span class="cat-ic">ðŸ¡</span>Casas</button>
-            <button class="cat-btn" type="button"><span class="cat-ic">ðŸ¢</span>Departamentos</button>
-            <button class="cat-btn" type="button"><span class="cat-ic">ðŸ“</span>Lotes</button>
-            <button class="cat-btn" type="button"><span class="cat-ic">ðŸª</span>Locales</button>
-            <button class="cat-btn" type="button"><span class="cat-ic">ðŸŒ¾</span>Chacras</button>
-            <button class="cat-btn" type="button"><span class="cat-ic">ðŸ’¼</span>Oficinas</button>
+            <button class="cat-btn active" type="button"><span class="cat-ic">🏠</span>Todos</button>
+            <button class="cat-btn" type="button"><span class="cat-ic">🌱</span>Terrenos</button>
+            <button class="cat-btn" type="button"><span class="cat-ic">🏡</span>Casas</button>
+            <button class="cat-btn" type="button"><span class="cat-ic">🏢</span>Departamentos</button>
+            <button class="cat-btn" type="button"><span class="cat-ic">📐</span>Lotes</button>
+            <button class="cat-btn" type="button"><span class="cat-ic">🏪</span>Locales</button>
+            <button class="cat-btn" type="button"><span class="cat-ic">🌾</span>Chacras</button>
+            <button class="cat-btn" type="button"><span class="cat-ic">💼</span>Oficinas</button>
         </div>
         <div class="quick-filters">
             <div class="chip-row">
@@ -236,15 +186,10 @@
             </div>
         </section>
     </main>
+@endsection
 
-    <footer>
-        <div class="footer-wrap">
-            <a href="#" class="logo"><span class="logo-icon">ðŸŒ¿</span>Kusay<span class="dot">.</span><span class="pe">pe</span></a>
-            <p class="foot-note">Portal inmobiliario de la selva y sierra peruana - Pucallpa, Ucayali</p>
-        </div>
-    </footer>
-
-    <script>
+@section('scripts')
+<script>
         const toggleGroup = (selector) => {
             document.querySelectorAll(selector).forEach((button) => {
                 button.addEventListener('click', () => {
@@ -258,6 +203,5 @@
         toggleGroup('.chip');
         toggleGroup('.view-btn');
     </script>
-</body>
-</html>
+@endsection
 

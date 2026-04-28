@@ -1,0 +1,51 @@
+{
+  "slug": "politica-privacidad",
+  "title": "Politica de privacidad",
+  "updated_at": "2026-04-28",
+  "summary": "Como recopilamos, usamos y protegemos datos personales dentro del portal.",
+  "sections": [
+    {
+      "title": "Datos que recopilamos",
+      "paragraphs": [
+        "Recopilamos datos de registro, informacion de publicaciones y datos tecnicos basicos de uso del sitio."
+      ],
+      "bullets": [
+        "Nombre, correo y telefono cuando el usuario los registra",
+        "Datos de propiedades publicadas",
+        "Registros tecnicos de visitas y clics para analitica interna"
+      ]
+    },
+    {
+      "title": "Finalidad del tratamiento",
+      "paragraphs": [
+        "Usamos los datos para operar el portal, mejorar la experiencia y proteger la seguridad del servicio."
+      ],
+      "bullets": [
+        "Mostrar y administrar publicaciones",
+        "Permitir contacto entre usuarios",
+        "Detectar comportamientos sospechosos"
+      ]
+    },
+    {
+      "title": "Comparticion de datos",
+      "paragraphs": [
+        "No vendemos datos personales. Solo compartimos lo necesario para funcionamiento del servicio o por requerimiento legal."
+      ],
+      "bullets": [
+        "Datos publicos de contacto definidos por el propio usuario",
+        "Requerimientos de autoridad competente, cuando corresponda"
+      ]
+    },
+    {
+      "title": "Conservacion y derechos",
+      "paragraphs": [
+        "El usuario puede solicitar actualizacion o eliminacion de datos permitidos por ley y por reglas internas del portal."
+      ],
+      "bullets": [
+        "Acceder, corregir o actualizar datos",
+        "Solicitar baja de cuenta",
+        "Reportar uso indebido de informacion"
+      ]
+    }
+  ]
+}

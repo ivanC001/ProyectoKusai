@@ -1,0 +1,54 @@
+{
+  "slug": "terminos-condiciones",
+  "title": "Terminos y condiciones",
+  "updated_at": "2026-04-28",
+  "summary": "Condiciones de uso del portal para usuarios que publican o buscan propiedades.",
+  "sections": [
+    {
+      "title": "Uso de la plataforma",
+      "paragraphs": [
+        "Kusay.pe es una plataforma digital para publicar avisos y facilitar contacto entre interesados en bienes inmuebles.",
+        "El usuario se compromete a usar la plataforma de forma licita y con informacion veraz."
+      ],
+      "bullets": [
+        "No publicar contenido falso o enganoso",
+        "No suplantar identidad",
+        "No usar el portal para actividades ilegales"
+      ]
+    },
+    {
+      "title": "Responsabilidad del usuario",
+      "paragraphs": [
+        "Cada usuario es responsable de verificar datos de la contraparte, estado legal del inmueble y condiciones de cualquier operacion."
+      ],
+      "bullets": [
+        "Verificar identidad del vendedor o comprador",
+        "Validar documentos y titularidad",
+        "Consultar asesoria legal antes de firmar o pagar"
+      ]
+    },
+    {
+      "title": "Limitacion de responsabilidad",
+      "paragraphs": [
+        "Kusay.pe no es banco, inmobiliaria, notaria ni intermediario contractual.",
+        "Kusay.pe no se hace responsable por estafas, fraudes, perdidas economicas, depositos, adelantos o transferencias realizadas entre usuarios."
+      ],
+      "bullets": [
+        "No administramos dinero de ninguna operacion",
+        "No garantizamos cierre de compraventa o alquiler",
+        "Solo brindamos el servicio de publicacion y contacto"
+      ]
+    },
+    {
+      "title": "Moderacion y bajas",
+      "paragraphs": [
+        "Podemos retirar publicaciones o bloquear cuentas cuando exista incumplimiento de estas condiciones."
+      ],
+      "bullets": [
+        "Contenido sospechoso o fraudulento",
+        "Datos falsos reiterados",
+        "Uso abusivo de la plataforma"
+      ]
+    }
+  ]
+}

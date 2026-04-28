@@ -40,6 +40,7 @@ class PortalController extends Controller
             'dormitorios' => $request->integer('dormitorios') > 0
                 ? $request->integer('dormitorios')
                 : null,
+            'solo_favoritos' => $request->boolean('favoritos') && $request->user() !== null,
             'orden' => in_array($request->string('orden')->toString(), ['recientes', 'precio_asc', 'precio_desc'], true)
                 ? $request->string('orden')->toString()
                 : 'recientes',
@@ -60,6 +61,12 @@ class PortalController extends Controller
             ->withCount(['imagenes', 'contactos', 'favoritos', 'visitas']);
 
         $this->applyFilters($query, $filtros);
+
+        if ($filtros['solo_favoritos'] && $request->user() !== null) {
+            $query->whereHas('favoritos', function ($favoritosQuery) use ($request): void {
+                $favoritosQuery->where('user_id', $request->user()->id);
+            });
+        }
 
         $destacadas = (clone $query)
             ->orderByDesc('visitas_count')
@@ -101,13 +108,6 @@ class PortalController extends Controller
                 ->pluck('propiedad_id');
         }
 
-        $metricasPortal = [
-            'usuarios_visitantes' => PortalVisita::query()
-                ->distinct('visitor_key')
-                ->count('visitor_key'),
-            'clics_propiedades' => Visita::query()->count(),
-        ];
-
         return view('portal.index', [
             'tiposPropiedad' => $tiposPropiedad,
             'filtros' => $filtros,
@@ -116,7 +116,6 @@ class PortalController extends Controller
             'destacadas' => $destacadas,
             'ciudadesTop' => $ciudadesTop,
             'favoritasIds' => $favoritasIds,
-            'metricasPortal' => $metricasPortal,
         ]);
     }
 
@@ -235,6 +234,7 @@ class PortalController extends Controller
      *     precio_max: float|null,
      *     area_min: float|null,
      *     dormitorios: int|null,
+     *     solo_favoritos: bool,
      *     orden: string
      * }  $filtros
      */

@@ -6,6 +6,7 @@ use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\PortalController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PropiedadController;
+use App\Http\Controllers\SupportPageController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -20,6 +21,11 @@ Route::post('/portal/propiedades/{propiedad}/clic', [PortalController::class, 'r
 Route::post('/portal/propiedades/{propiedad}/favorito/toggle', [PortalController::class, 'toggleFavorito'])
     ->whereNumber('propiedad')
     ->name('portal.propiedades.favoritos.toggle');
+Route::get('/soporte', [SupportPageController::class, 'index'])->name('soporte.index');
+Route::get('/soporte/centro-de-ayuda', [SupportPageController::class, 'helpCenter'])->name('soporte.ayuda');
+Route::get('/soporte/terminos-y-condiciones', [SupportPageController::class, 'terms'])->name('soporte.terminos');
+Route::get('/soporte/politica-de-privacidad', [SupportPageController::class, 'privacy'])->name('soporte.privacidad');
+Route::get('/soporte/terminos-legales', [SupportPageController::class, 'legal'])->name('soporte.legales');
 
 //muestra propiedades por id
 Route::get('/portal/propiedades/{propiedad}/imagenes/{imagen}', [PortalController::class, 'imagen'])
