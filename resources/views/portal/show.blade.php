@@ -7,6 +7,12 @@
 @endsection
 
 @section('content')
+@php
+    $galeriaImagenes = $propiedad->imagenes->isNotEmpty()
+        ? $propiedad->imagenes
+        : collect($propiedad->portadaImagen ? [$propiedad->portadaImagen] : []);
+@endphp
+
 <div class="wrap">
     <header class="top">
         <a class="crumb" href="{{ route('home') }}">Volver al inicio</a>
@@ -16,11 +22,47 @@
 
     <div class="layout">
         <article class="panel">
-            @if ($propiedad->portadaImagen)
-                <img class="cover" src="{{ route('portal.propiedades.imagen', [$propiedad, $propiedad->portadaImagen]) }}" alt="Portada de {{ $propiedad->titulo }}">
-            @else
-                <div class="cover"></div>
-            @endif
+            <section class="gallery" data-gallery>
+                <div class="gallery-stage">
+                    @forelse ($galeriaImagenes as $imagen)
+                        <figure class="gallery-slide {{ $loop->first ? 'active' : '' }}" data-slide>
+                            <img
+                                src="{{ route('portal.propiedades.imagen', [$propiedad, $imagen]) }}"
+                                alt="Foto {{ $loop->iteration }} de {{ $propiedad->titulo }}"
+                            >
+                        </figure>
+                    @empty
+                        <div class="gallery-empty">Sin fotos disponibles</div>
+                    @endforelse
+
+                    @if ($galeriaImagenes->count() > 1)
+                        <button class="gallery-nav prev" type="button" data-gallery-prev aria-label="Foto anterior">&#10094;</button>
+                        <button class="gallery-nav next" type="button" data-gallery-next aria-label="Foto siguiente">&#10095;</button>
+                        <div class="gallery-counter">
+                            <span data-gallery-current>1</span>/<span>{{ $galeriaImagenes->count() }}</span>
+                        </div>
+                    @endif
+                </div>
+
+                @if ($galeriaImagenes->count() > 1)
+                    <div class="gallery-thumbs">
+                        @foreach ($galeriaImagenes as $imagen)
+                            <button
+                                class="gallery-thumb {{ $loop->first ? 'active' : '' }}"
+                                type="button"
+                                data-gallery-thumb
+                                data-index="{{ $loop->index }}"
+                                aria-label="Ver foto {{ $loop->iteration }}"
+                            >
+                                <img
+                                    src="{{ route('portal.propiedades.imagen', [$propiedad, $imagen]) }}"
+                                    alt="Miniatura {{ $loop->iteration }}"
+                                >
+                            </button>
+                        @endforeach
+                    </div>
+                @endif
+            </section>
 
             <div class="content">
                 <p class="price">S/ {{ number_format((float) $propiedad->precio, 2, '.', ',') }}</p>
@@ -29,6 +71,7 @@
                     {{ $propiedad->ubicacion?->provincia ?? 'Sin provincia' }},
                     {{ $propiedad->ubicacion?->departamento ?? 'Sin departamento' }}
                 </p>
+
                 <div class="chips">
                     <span class="chip">{{ ucfirst($propiedad->tipo) }}</span>
                     <span class="chip">{{ $propiedad->tipoPropiedad?->nombre ?? 'Propiedad' }}</span>
@@ -37,7 +80,28 @@
                     <span class="chip">{{ $propiedad->visitas_count }} clic(s)</span>
                     <span class="chip" id="detalle-favoritos-chip">{{ $propiedad->favoritos_count }} favorito(s)</span>
                 </div>
+
+                <dl class="detail-grid">
+                    <div class="detail-item">
+                        <dt>Area</dt>
+                        <dd>{{ $propiedad->area !== null ? number_format((float) $propiedad->area, 2, '.', ',').' m2' : 'No especificada' }}</dd>
+                    </div>
+                    <div class="detail-item">
+                        <dt>Dormitorios</dt>
+                        <dd>{{ $propiedad->habitaciones !== null ? $propiedad->habitaciones : 'No especificado' }}</dd>
+                    </div>
+                    <div class="detail-item">
+                        <dt>Banos</dt>
+                        <dd>{{ $propiedad->banos !== null ? $propiedad->banos : 'No especificado' }}</dd>
+                    </div>
+                    <div class="detail-item">
+                        <dt>Publicado</dt>
+                        <dd>{{ optional($propiedad->created_at)->format('Y-m-d H:i') }}</dd>
+                    </div>
+                </dl>
+
                 <p class="desc">{{ $propiedad->descripcion }}</p>
+
                 @auth
                     <div class="fav-row">
                         <button
@@ -50,7 +114,7 @@
                             aria-pressed="{{ $esFavorita ? 'true' : 'false' }}"
                             title="{{ $esFavorita ? 'Quitar de favoritos' : 'Agregar a favoritos' }}"
                         >
-                            {!! $esFavorita ? '&#9733;' : '&#9734;' !!}
+                            {!! $esFavorita ? '&#9829;' : '&#9825;' !!}
                         </button>
                         <p class="fav-feedback" id="detalle-fav-feedback"></p>
                     </div>
@@ -100,9 +164,88 @@
         }).addTo(map);
 
         if (hasCoords) {
-            // Marcador unico que representa la ubicacion registrada de la propiedad.
             L.marker([lat, lng]).addTo(map);
         }
+    })();
+
+    (() => {
+        const gallery = document.querySelector('[data-gallery]');
+        if (!gallery) {
+            return;
+        }
+
+        const slides = Array.from(gallery.querySelectorAll('[data-slide]'));
+        const thumbs = Array.from(gallery.querySelectorAll('[data-gallery-thumb]'));
+        const prevButton = gallery.querySelector('[data-gallery-prev]');
+        const nextButton = gallery.querySelector('[data-gallery-next]');
+        const currentCounter = gallery.querySelector('[data-gallery-current]');
+
+        if (slides.length < 2) {
+            return;
+        }
+
+        let index = 0;
+        let autoTimer = null;
+
+        const paint = (nextIndex) => {
+            index = (nextIndex + slides.length) % slides.length;
+
+            slides.forEach((slide, slideIndex) => {
+                slide.classList.toggle('active', slideIndex === index);
+            });
+            thumbs.forEach((thumb, thumbIndex) => {
+                thumb.classList.toggle('active', thumbIndex === index);
+            });
+
+            if (currentCounter) {
+                currentCounter.textContent = String(index + 1);
+            }
+        };
+
+        const restartAutoplay = () => {
+            if (autoTimer !== null) {
+                clearInterval(autoTimer);
+            }
+            autoTimer = setInterval(() => {
+                paint(index + 1);
+            }, 5000);
+        };
+
+        if (prevButton) {
+            prevButton.addEventListener('click', () => {
+                paint(index - 1);
+                restartAutoplay();
+            });
+        }
+
+        if (nextButton) {
+            nextButton.addEventListener('click', () => {
+                paint(index + 1);
+                restartAutoplay();
+            });
+        }
+
+        thumbs.forEach((thumb) => {
+            thumb.addEventListener('click', () => {
+                const thumbIndex = Number.parseInt(thumb.dataset.index || '', 10);
+                if (!Number.isInteger(thumbIndex)) {
+                    return;
+                }
+                paint(thumbIndex);
+                restartAutoplay();
+            });
+        });
+
+        gallery.addEventListener('mouseenter', () => {
+            if (autoTimer !== null) {
+                clearInterval(autoTimer);
+                autoTimer = null;
+            }
+        });
+        gallery.addEventListener('mouseleave', restartAutoplay);
+
+        paint(0);
+        restartAutoplay();
     })();
 
     (() => {
@@ -151,7 +294,7 @@
                 const favorita = payload.favorita === true;
                 favButton.dataset.favorita = favorita ? '1' : '0';
                 favButton.classList.toggle('active', favorita);
-                favButton.textContent = favorita ? '\u2605' : '\u2606';
+                favButton.innerHTML = favorita ? '&#9829;' : '&#9825;';
                 favButton.setAttribute('aria-label', favorita ? 'Quitar de favoritos' : 'Agregar a favoritos');
                 favButton.setAttribute('title', favorita ? 'Quitar de favoritos' : 'Agregar a favoritos');
                 favButton.setAttribute('aria-pressed', favorita ? 'true' : 'false');
@@ -166,3 +309,4 @@
     })();
 </script>
 @endsection
+

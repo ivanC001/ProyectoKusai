@@ -215,42 +215,29 @@
                             <p class="card-price">S/ {{ number_format((float) $propiedad->precio, 2, '.', ',') }}</p>
                             <div class="meta-row">
                                 <span class="meta-chip">{{ $propiedad->visitas_count }} clic(s)</span>
-                                <span class="meta-chip">{{ $propiedad->favoritos_count }} favorito(s)</span>
+                                <span class="meta-chip" data-favoritos-id="{{ $propiedad->id }}">{{ $propiedad->favoritos_count }} favorito(s)</span>
                             </div>
-                            @php
-                                $descripcionModal = \Illuminate\Support\Str::limit(
-                                    trim((string) preg_replace('/\s+/', ' ', strip_tags((string) $propiedad->descripcion))),
-                                    220
-                                );
-                                $ubicacionModal = trim(($propiedad->ubicacion?->distrito ?? 'Sin distrito').', '.($propiedad->ubicacion?->departamento ?? 'Sin departamento'));
-                                $imagenModal = $propiedad->portadaImagen
-                                    ? route('portal.propiedades.imagen', [$propiedad, $propiedad->portadaImagen])
-                                    : '';
-                            @endphp
-                            <a
-                                class="card-link js-open-detail"
-                                href="#"
-                                data-title="{{ $propiedad->titulo }}"
-                                data-tipo="{{ $propiedad->tipoPropiedad?->nombre ?? 'Propiedad' }}"
-                                data-ubicacion="{{ $ubicacionModal }}"
-                                data-precio="{{ number_format((float) $propiedad->precio, 2, '.', ',') }}"
-                                data-descripcion="{{ $descripcionModal }}"
-                                data-operacion="{{ ucfirst($propiedad->tipo) }}"
-                                data-fotos="{{ $propiedad->imagenes_count }}"
-                                data-contactos="{{ $propiedad->contactos_count }}"
-                                data-dormitorios="{{ $propiedad->habitaciones ?? '' }}"
-                                data-area="{{ $propiedad->area !== null ? number_format((float) $propiedad->area, 2, '.', ',').' m2' : '' }}"
-                                data-image="{{ $imagenModal }}"
-                                data-lat="{{ $propiedad->latitud ?? '' }}"
-                                data-lng="{{ $propiedad->longitud ?? '' }}"
-                                data-clics="{{ $propiedad->visitas_count }}"
-                                data-favoritos="{{ $propiedad->favoritos_count }}"
-                                data-favorita="{{ $favoritasIds->contains($propiedad->id) ? '1' : '0' }}"
-                                data-click-url="{{ route('portal.propiedades.click', $propiedad) }}"
-                                data-favorito-url="{{ route('portal.propiedades.favoritos.toggle', $propiedad) }}"
-                            >
-                                Ver propiedad
-                            </a>
+                            <div class="card-actions">
+                                @auth
+                                    <button
+                                        type="button"
+                                        class="card-favorite-btn {{ $favoritasIds->contains($propiedad->id) ? 'active' : '' }}"
+                                        data-favorito-url="{{ route('portal.propiedades.favoritos.toggle', $propiedad) }}"
+                                        data-favorita="{{ $favoritasIds->contains($propiedad->id) ? '1' : '0' }}"
+                                        data-favoritos-id="{{ $propiedad->id }}"
+                                        aria-label="{{ $favoritasIds->contains($propiedad->id) ? 'Quitar de favoritos' : 'Agregar a favoritos' }}"
+                                        aria-pressed="{{ $favoritasIds->contains($propiedad->id) ? 'true' : 'false' }}"
+                                        title="{{ $favoritasIds->contains($propiedad->id) ? 'Quitar de favoritos' : 'Agregar a favoritos' }}"
+                                    >
+                                        {!! $favoritasIds->contains($propiedad->id) ? '&#9829;' : '&#9825;' !!}
+                                    </button>
+                                @else
+                                    <a href="{{ route('login') }}" class="card-favorite-btn" title="Inicia sesion para guardar favoritos">&#9825;</a>
+                                @endauth
+                                <a class="card-link" href="{{ route('portal.propiedades.show', $propiedad) }}">
+                                    Ver detalle
+                                </a>
+                            </div>
                         </div>
                     </article>
                 @empty
@@ -296,42 +283,29 @@
                                     <span class="meta-chip">{{ $propiedad->imagenes_count }} foto(s)</span>
                                     <span class="meta-chip">{{ $propiedad->contactos_count }} contacto(s)</span>
                                     <span class="meta-chip">{{ $propiedad->visitas_count }} clic(s)</span>
-                                    <span class="meta-chip">{{ $propiedad->favoritos_count }} favorito(s)</span>
+                                    <span class="meta-chip" data-favoritos-id="{{ $propiedad->id }}">{{ $propiedad->favoritos_count }} favorito(s)</span>
                                 </div>
-                                @php
-                                    $descripcionModal = \Illuminate\Support\Str::limit(
-                                        trim((string) preg_replace('/\s+/', ' ', strip_tags((string) $propiedad->descripcion))),
-                                        220
-                                    );
-                                    $ubicacionModal = trim(($propiedad->ubicacion?->distrito ?? 'Sin distrito').', '.($propiedad->ubicacion?->departamento ?? 'Sin departamento'));
-                                    $imagenModal = $propiedad->portadaImagen
-                                        ? route('portal.propiedades.imagen', [$propiedad, $propiedad->portadaImagen])
-                                        : '';
-                                @endphp
-                                <a
-                                    class="card-link js-open-detail"
-                                    href="#"
-                                    data-title="{{ $propiedad->titulo }}"
-                                    data-tipo="{{ $propiedad->tipoPropiedad?->nombre ?? 'Propiedad' }}"
-                                    data-ubicacion="{{ $ubicacionModal }}"
-                                    data-precio="{{ number_format((float) $propiedad->precio, 2, '.', ',') }}"
-                                    data-descripcion="{{ $descripcionModal }}"
-                                    data-operacion="{{ ucfirst($propiedad->tipo) }}"
-                                    data-fotos="{{ $propiedad->imagenes_count }}"
-                                    data-contactos="{{ $propiedad->contactos_count }}"
-                                    data-dormitorios="{{ $propiedad->habitaciones ?? '' }}"
-                                    data-area="{{ $propiedad->area !== null ? number_format((float) $propiedad->area, 2, '.', ',').' m2' : '' }}"
-                                    data-image="{{ $imagenModal }}"
-                                    data-lat="{{ $propiedad->latitud ?? '' }}"
-                                    data-lng="{{ $propiedad->longitud ?? '' }}"
-                                    data-clics="{{ $propiedad->visitas_count }}"
-                                    data-favoritos="{{ $propiedad->favoritos_count }}"
-                                    data-favorita="{{ $favoritasIds->contains($propiedad->id) ? '1' : '0' }}"
-                                    data-click-url="{{ route('portal.propiedades.click', $propiedad) }}"
-                                    data-favorito-url="{{ route('portal.propiedades.favoritos.toggle', $propiedad) }}"
-                                >
-                                    Ver detalle
-                                </a>
+                                <div class="card-actions">
+                                    @auth
+                                        <button
+                                            type="button"
+                                            class="card-favorite-btn {{ $favoritasIds->contains($propiedad->id) ? 'active' : '' }}"
+                                            data-favorito-url="{{ route('portal.propiedades.favoritos.toggle', $propiedad) }}"
+                                            data-favorita="{{ $favoritasIds->contains($propiedad->id) ? '1' : '0' }}"
+                                            data-favoritos-id="{{ $propiedad->id }}"
+                                            aria-label="{{ $favoritasIds->contains($propiedad->id) ? 'Quitar de favoritos' : 'Agregar a favoritos' }}"
+                                            aria-pressed="{{ $favoritasIds->contains($propiedad->id) ? 'true' : 'false' }}"
+                                            title="{{ $favoritasIds->contains($propiedad->id) ? 'Quitar de favoritos' : 'Agregar a favoritos' }}"
+                                        >
+                                            {!! $favoritasIds->contains($propiedad->id) ? '&#9829;' : '&#9825;' !!}
+                                        </button>
+                                    @else
+                                        <a href="{{ route('login') }}" class="card-favorite-btn" title="Inicia sesion para guardar favoritos">&#9825;</a>
+                                    @endauth
+                                    <a class="card-link" href="{{ route('portal.propiedades.show', $propiedad) }}">
+                                        Ver detalle
+                                    </a>
+                                </div>
                             </div>
                         </article>
                     @endforeach
@@ -385,64 +359,6 @@
                 @endforelse
             </div>
         </section>
-
-        <section class="sec" id="publicar">
-            <div class="shead">
-                <div>
-                    <p class="eyebrow">Como publicar</p>
-                    <h2 class="stitle">Publica en 4 pasos</h2>
-                    <p class="ssub">Flujo claro para nuevos usuarios.</p>
-                </div>
-            </div>
-            <div class="guia-grid">
-                <article class="step"><strong>1.</strong><h3>Crea tu cuenta</h3><p>Registro rapido con correo y telefono.</p></article>
-                <article class="step"><strong>2.</strong><h3>Sube fotos</h3><p>Publica imagenes claras de tu propiedad.</p></article>
-                <article class="step"><strong>3.</strong><h3>Completa datos</h3><p>Precio, metraje, ubicacion y detalles.</p></article>
-                <article class="step"><strong>4.</strong><h3>Publica y recibe contactos</h3><p>Conecta con compradores de forma directa.</p></article>
-            </div>
-        </section>`r`n<div class="prop-modal" id="prop-detail-modal" hidden>
-        <div class="prop-modal-backdrop" data-modal-close></div>
-        <article class="prop-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="prop-modal-title">
-            <button class="prop-modal-close" type="button" aria-label="Cerrar detalle" data-modal-close>&times;</button>
-            <div class="prop-modal-media">
-                <img id="prop-modal-image" alt="Imagen de propiedad">
-                <div id="prop-modal-image-empty" class="prop-modal-media-empty">Sin foto disponible</div>
-                <div id="prop-modal-geo" class="prop-modal-geo" hidden>
-                    <div class="prop-modal-geo-top">
-                        <span class="prop-modal-geo-pin-wrap">
-                            <span class="prop-modal-geo-pin">&#128205;</span>
-                        </span>
-                        <div class="prop-modal-geo-head">
-                            <p class="prop-modal-geo-title">Ubicacion GPS marcada</p>
-                            <p class="prop-modal-geo-text" id="prop-modal-geo-text">Lat: - | Lng: -</p>
-                        </div>
-                    </div>
-                    <div class="prop-modal-geo-actions">
-                        <a id="prop-modal-geo-map" class="prop-modal-geo-link" href="#" target="_blank" rel="noopener noreferrer">Ver en OpenStreetMap</a>
-                        <button id="prop-modal-geo-copy" class="prop-modal-geo-copy" type="button">Copiar coordenadas</button>
-                    </div>
-                </div>
-            </div>
-            <div class="prop-modal-content">
-                <p class="prop-modal-type" id="prop-modal-type">Propiedad</p>
-                <h3 class="prop-modal-title" id="prop-modal-title">Detalle</h3>
-                <p class="prop-modal-location" id="prop-modal-location">Ubicacion</p>
-                <p class="prop-modal-price" id="prop-modal-price">S/ 0.00</p>
-                <p class="prop-modal-desc" id="prop-modal-desc">Descripcion de la propiedad.</p>
-                <div class="prop-modal-chips" id="prop-modal-chips"></div>
-                <div class="prop-modal-actions">
-                    @auth
-                        <button class="prop-modal-btn fav" id="prop-modal-favorite" type="button" hidden aria-label="Agregar a favoritos" aria-pressed="false" title="Agregar a favoritos">?</button>
-                    @endauth
-                    <button class="prop-modal-btn main" type="button" data-modal-close>Entendido</button>
-                    <button class="prop-modal-btn soft" type="button" data-modal-close>Cerrar</button>
-                </div>
-                <p class="prop-modal-feedback" id="prop-modal-feedback" hidden></p>
-            </div>
-        </article>
-    </div>
-
-    
 @endsection
 
 @section('scripts')
@@ -568,212 +484,23 @@
             updateToggleVisibility();
         })();
 
-        (() => {
-            const modal = document.getElementById('prop-detail-modal');
-            const triggers = Array.from(document.querySelectorAll('.js-open-detail'));
-            if (!modal || !triggers.length) {
+                (() => {
+            const favoriteButtons = Array.from(document.querySelectorAll('.card-favorite-btn[data-favorito-url]'));
+            if (!favoriteButtons.length) {
                 return;
             }
 
-            const image = document.getElementById('prop-modal-image');
-            const imageEmpty = document.getElementById('prop-modal-image-empty');
-            const type = document.getElementById('prop-modal-type');
-            const title = document.getElementById('prop-modal-title');
-            const location = document.getElementById('prop-modal-location');
-            const price = document.getElementById('prop-modal-price');
-            const description = document.getElementById('prop-modal-desc');
-            const chips = document.getElementById('prop-modal-chips');
-            const geoBox = document.getElementById('prop-modal-geo');
-            const geoText = document.getElementById('prop-modal-geo-text');
-            const geoMapLink = document.getElementById('prop-modal-geo-map');
-            const geoCopyButton = document.getElementById('prop-modal-geo-copy');
-            const favoriteButton = document.getElementById('prop-modal-favorite');
-            const feedback = document.getElementById('prop-modal-feedback');
-            const closeButtons = Array.from(modal.querySelectorAll('[data-modal-close]'));
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
             const loginUrl = @json(route('login'));
-            let currentCoordsText = '';
-            let activeTrigger = null;
 
-            const closeModal = () => {
-                modal.hidden = true;
-                document.body.classList.remove('modal-open');
-            };
-
-            const showFeedback = (message, isError = false) => {
-                if (!feedback) {
-                    return;
-                }
-
-                if (!message) {
-                    feedback.hidden = true;
-                    feedback.textContent = '';
-                    return;
-                }
-
-                feedback.hidden = false;
-                feedback.textContent = message;
-                feedback.style.color = isError ? '#9a3434' : '#315847';
-            };
-
-            const updateFavoriteButton = (trigger) => {
-                if (!favoriteButton || !trigger) {
-                    return;
-                }
-
-                const favorita = trigger.dataset.favorita === '1';
-                const favoritoUrl = trigger.dataset.favoritoUrl || '';
-
-                favoriteButton.hidden = favoritoUrl === '';
-                favoriteButton.dataset.url = favoritoUrl;
-                favoriteButton.classList.toggle('active', favorita);
-                favoriteButton.textContent = favorita ? '?' : '?';
-                favoriteButton.setAttribute('aria-label', favorita ? 'Quitar de favoritos' : 'Agregar a favoritos');
-                favoriteButton.setAttribute('title', favorita ? 'Quitar de favoritos' : 'Agregar a favoritos');
-                favoriteButton.setAttribute('aria-pressed', favorita ? 'true' : 'false');
-            };
-
-            const buildChips = (trigger) => {
-                if (!chips) {
-                    return;
-                }
-
-                chips.innerHTML = '';
-
-                const chipValues = [
-                    trigger.dataset.operacion ? `Operacion: ${trigger.dataset.operacion}` : '',
-                    trigger.dataset.fotos ? `${trigger.dataset.fotos} foto(s)` : '',
-                    trigger.dataset.contactos ? `${trigger.dataset.contactos} contacto(s)` : '',
-                    trigger.dataset.clics ? `${trigger.dataset.clics} clic(s)` : '',
-                    trigger.dataset.favoritos ? `${trigger.dataset.favoritos} favorito(s)` : '',
-                    trigger.dataset.dormitorios ? `${trigger.dataset.dormitorios} dormitorio(s)` : '',
-                    trigger.dataset.area ? `Area: ${trigger.dataset.area}` : '',
-                ].filter(Boolean);
-
-                chipValues.forEach((value) => {
-                    const span = document.createElement('span');
-                    span.className = 'prop-modal-chip';
-                    span.textContent = value;
-                    chips.appendChild(span);
-                });
-            };
-
-            const openModal = (trigger) => {
-                activeTrigger = trigger;
-                const imageUrl = trigger.dataset.image || '';
-                const latValue = Number.parseFloat(trigger.dataset.lat || '');
-                const lngValue = Number.parseFloat(trigger.dataset.lng || '');
-                const hasCoords = Number.isFinite(latValue) && Number.isFinite(lngValue);
-
-                if (image && imageEmpty) {
-                    if (imageUrl !== '') {
-                        image.src = imageUrl;
-                        image.style.display = 'block';
-                        imageEmpty.style.display = 'none';
-                    } else {
-                        image.removeAttribute('src');
-                        image.style.display = 'none';
-                        imageEmpty.style.display = 'grid';
-                    }
-                }
-
-                if (geoBox && geoText) {
-                    if (hasCoords) {
-                        currentCoordsText = `${latValue.toFixed(7)}, ${lngValue.toFixed(7)}`;
-                        geoText.textContent = `Lat: ${latValue.toFixed(7)} | Lng: ${lngValue.toFixed(7)}`;
-                        geoBox.classList.remove('no-coords');
-                        geoBox.hidden = false;
-
-                        if (geoMapLink) {
-                            geoMapLink.href = `https://www.openstreetmap.org/?mlat=${latValue.toFixed(7)}&mlon=${lngValue.toFixed(7)}#map=17/${latValue.toFixed(7)}/${lngValue.toFixed(7)}`;
-                            geoMapLink.style.pointerEvents = 'auto';
-                            geoMapLink.style.opacity = '1';
-                        }
-                    } else {
-                        currentCoordsText = '';
-                        geoText.textContent = 'Coordenadas no registradas para esta propiedad.';
-                        geoBox.classList.add('no-coords');
-                        geoBox.hidden = false;
-
-                        if (geoMapLink) {
-                            geoMapLink.href = '#';
-                            geoMapLink.style.pointerEvents = 'none';
-                            geoMapLink.style.opacity = '.55';
-                        }
-                    }
-                }
-
-                if (type) {
-                    type.textContent = trigger.dataset.tipo || 'Propiedad';
-                }
-                if (title) {
-                    title.textContent = trigger.dataset.title || 'Detalle de propiedad';
-                }
-                if (location) {
-                    location.textContent = trigger.dataset.ubicacion || 'Sin ubicacion';
-                }
-                if (price) {
-                    price.textContent = `S/ ${trigger.dataset.precio || '0.00'}`;
-                }
-                if (description) {
-                    description.textContent = trigger.dataset.descripcion || 'Sin descripcion disponible.';
-                }
-
-                buildChips(trigger);
-                updateFavoriteButton(trigger);
-                showFeedback('');
-
-                modal.hidden = false;
-                document.body.classList.add('modal-open');
-            };
-
-            const reportClick = (trigger) => {
-                const clickUrl = trigger?.dataset?.clickUrl || '';
-                if (!clickUrl || !csrfToken) {
-                    return;
-                }
-
-                fetch(clickUrl, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': csrfToken,
-                        'X-Requested-With': 'XMLHttpRequest',
-                        Accept: 'application/json',
-                    },
-                    keepalive: true,
-                }).catch(() => {
-                    // El registro de clic es auxiliar; ignoramos errores de red.
-                });
-            };
-
-            triggers.forEach((trigger) => {
-                trigger.addEventListener('click', (event) => {
-                    event.preventDefault();
-                    reportClick(trigger);
-
-                    const clicsActuales = Number.parseInt(trigger.dataset.clics || '', 10);
-                    if (Number.isFinite(clicsActuales)) {
-                        trigger.dataset.clics = String(clicsActuales + 1);
-                    }
-
-                    openModal(trigger);
-                });
-            });
-
-            if (favoriteButton) {
-                favoriteButton.addEventListener('click', async () => {
-                    if (!activeTrigger) {
-                        return;
-                    }
-
-                    const favoritoUrl = favoriteButton.dataset.url || '';
+            favoriteButtons.forEach((button) => {
+                button.addEventListener('click', async () => {
+                    const favoritoUrl = button.dataset.favoritoUrl || '';
                     if (!favoritoUrl) {
-                        showFeedback('No se pudo identificar la propiedad.', true);
                         return;
                     }
 
-                    favoriteButton.disabled = true;
-                    showFeedback('Guardando favorito...');
+                    button.disabled = true;
 
                     try {
                         const response = await fetch(favoritoUrl, {
@@ -791,74 +518,34 @@
                         }
 
                         const payload = await response.json();
-
                         if (!response.ok || payload.ok === false) {
                             throw new Error(payload.message || 'No se pudo actualizar favorito.');
                         }
 
-                        activeTrigger.dataset.favorita = payload.favorita ? '1' : '0';
-                        activeTrigger.dataset.favoritos = String(payload.total_favoritos ?? 0);
-                        updateFavoriteButton(activeTrigger);
-                        buildChips(activeTrigger);
-                        showFeedback(payload.message || 'Favorito actualizado.');
-                    } catch (error) {
-                        showFeedback(error?.message || 'No se pudo actualizar favorito.', true);
-                    } finally {
-                        favoriteButton.disabled = false;
-                    }
-                });
-            }
+                        const favorita = payload.favorita === true;
+                        button.dataset.favorita = favorita ? '1' : '0';
+                        button.classList.toggle('active', favorita);
+                        button.innerHTML = favorita ? '&#9829;' : '&#9825;';
+                        button.setAttribute('aria-label', favorita ? 'Quitar de favoritos' : 'Agregar a favoritos');
+                        button.setAttribute('title', favorita ? 'Quitar de favoritos' : 'Agregar a favoritos');
+                        button.setAttribute('aria-pressed', favorita ? 'true' : 'false');
 
-            closeButtons.forEach((button) => {
-                button.addEventListener('click', closeModal);
-            });
-
-            if (geoCopyButton) {
-                geoCopyButton.addEventListener('click', async () => {
-                    if (!currentCoordsText) {
-                        geoCopyButton.textContent = 'Sin coordenadas';
-                        geoCopyButton.classList.add('copied');
-                        setTimeout(() => {
-                            geoCopyButton.textContent = 'Copiar coordenadas';
-                            geoCopyButton.classList.remove('copied');
-                        }, 1200);
-                        return;
-                    }
-
-                    try {
-                        if (navigator.clipboard && navigator.clipboard.writeText) {
-                            await navigator.clipboard.writeText(currentCoordsText);
-                        } else {
-                            const helper = document.createElement('textarea');
-                            helper.value = currentCoordsText;
-                            helper.setAttribute('readonly', '');
-                            helper.style.position = 'absolute';
-                            helper.style.left = '-9999px';
-                            document.body.appendChild(helper);
-                            helper.select();
-                            document.execCommand('copy');
-                            document.body.removeChild(helper);
+                        const favoritosId = button.dataset.favoritosId || '';
+                        if (favoritosId !== '') {
+                            document.querySelectorAll(`[data-favoritos-id="${favoritosId}"]`).forEach((counter) => {
+                                counter.textContent = `${payload.total_favoritos ?? 0} favorito(s)`;
+                            });
                         }
-
-                        geoCopyButton.textContent = 'Copiado';
-                        geoCopyButton.classList.add('copied');
                     } catch (error) {
-                        geoCopyButton.textContent = 'No se pudo copiar';
+                        console.error(error);
+                    } finally {
+                        button.disabled = false;
                     }
-
-                    setTimeout(() => {
-                        geoCopyButton.textContent = 'Copiar coordenadas';
-                        geoCopyButton.classList.remove('copied');
-                    }, 1300);
                 });
-            }
-
-            document.addEventListener('keydown', (event) => {
-                if (event.key === 'Escape' && !modal.hidden) {
-                    closeModal();
-                }
             });
         })();
     </script>
 @endsection
+
+
 
