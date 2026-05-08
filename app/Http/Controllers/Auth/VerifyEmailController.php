@@ -19,6 +19,7 @@ class VerifyEmailController extends Controller
         }
 
         if ($request->user()->markEmailAsVerified()) {
+            $request->user()->clearEmailVerificationCode();
             event(new Verified($request->user()));
         }
 

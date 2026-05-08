@@ -4,309 +4,226 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Iniciar sesion | Kusay.pe</title>
+    <link rel="icon" type="image/png" href="{{ asset('assets/image/png kusay.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('assets/image/png kusay.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700;9..144,800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" crossorigin="anonymous">
     <style>
-        :root {
-            --ink: #173e2f;
-            --muted: #638372;
-            --line: #d7e2db;
-            --paper: #ffffff;
-            --brand-900: #103928;
-            --brand-700: #1b6c49;
-            --brand-500: #3fb173;
-            --danger: #b34242;
-            --ok: #14613f;
-        }
-
-        * { box-sizing: border-box; }
-
+        /* Ruta de estilos base: resources/views/auth/login.blade.php */
         body {
-            margin: 0;
             min-height: 100vh;
-            color: var(--ink);
             font-family: "Manrope", sans-serif;
             background:
-                radial-gradient(circle at 12% 10%, rgba(95, 188, 133, .20), transparent 28%),
-                radial-gradient(circle at 88% 88%, rgba(79, 163, 113, .18), transparent 34%),
-                linear-gradient(155deg, #0b2418 0%, #16533a 52%, #2f8358 100%);
-            display: grid;
-            place-items: center;
-            padding: 26px 14px;
+                radial-gradient(circle at 14% 8%, rgba(110, 198, 145, .30), transparent 30%),
+                radial-gradient(circle at 82% 84%, rgba(88, 177, 128, .22), transparent 30%),
+                linear-gradient(160deg, #0b2418 0%, #145338 52%, #2f8358 100%);
         }
-
-        .auth-wrap {
-            width: min(1100px, 100%);
-            display: grid;
-            grid-template-columns: 1.08fr .92fr;
-            background: rgba(255, 255, 255, .96);
-            border: 1px solid rgba(23, 62, 47, .14);
-            border-radius: 18px;
-            overflow: hidden;
-            box-shadow: 0 24px 44px rgba(9, 34, 24, .30);
-        }
-
-        .auth-cover {
-            padding: 42px 34px;
-            color: #ecfff5;
-            background:
-                linear-gradient(180deg, rgba(8, 27, 20, .45), rgba(8, 27, 20, .65)),
-                linear-gradient(150deg, #0f3b2a, #1d7a52);
+        .auth-shell {
+            min-height: 100vh;
             display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            gap: 30px;
-        }
-
-        .brand {
-            display: inline-flex;
             align-items: center;
-            gap: 6px;
-            font-family: "Fraunces", serif;
-            font-size: 1.7rem;
-            font-weight: 800;
-            letter-spacing: -.4px;
-            text-decoration: none;
-            color: inherit;
+            justify-content: center;
+            padding: 1.2rem;
         }
-
-        .cover-copy h1 {
-            margin: 0 0 8px;
-            font-family: "Fraunces", serif;
-            font-size: clamp(1.8rem, 3.5vw, 2.6rem);
-            line-height: 1.08;
-        }
-
-        .cover-copy p {
-            margin: 0;
-            color: rgba(236, 255, 245, .86);
-            line-height: 1.5;
-        }
-
-        .cover-points {
-            display: grid;
-            gap: 10px;
-            margin-top: 6px;
-        }
-
-        .cover-points span {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            color: rgba(236, 255, 245, .9);
-            font-size: .94rem;
-            font-weight: 600;
-        }
-
         .auth-card {
-            background: #f9fcfa;
-            padding: 34px;
-            display: grid;
-            align-content: center;
+            width: min(1080px, 100%);
+            border: 0;
+            border-radius: 1.1rem;
+            overflow: hidden;
+            box-shadow: 0 1.2rem 2.4rem rgba(10, 37, 26, .36);
         }
-
-        .title {
-            margin: 0 0 4px;
+        .auth-cover {
+            background:
+                linear-gradient(180deg, rgba(11, 38, 27, .66), rgba(11, 38, 27, .78)),
+                linear-gradient(155deg, #0f3b2a, #1f7b53);
+            color: #f2fff8;
+            height: 100%;
+            padding: 2rem 1.6rem;
+        }
+        .auth-cover h1,
+        .auth-brand {
             font-family: "Fraunces", serif;
-            font-size: 1.9rem;
-            line-height: 1.15;
-            color: #124735;
         }
-
-        .subtitle {
-            margin: 0 0 18px;
-            color: var(--muted);
-            font-size: .95rem;
-        }
-
-        .alert {
-            border-radius: 11px;
-            padding: 11px 12px;
-            font-size: .9rem;
-            margin-bottom: 13px;
-        }
-
-        .alert-ok {
-            border: 1px solid #9dcdb6;
-            background: #edf8f2;
-            color: var(--ok);
-        }
-
-        .alert-error {
-            border: 1px solid #efc1c1;
-            background: #fff1f1;
-            color: var(--danger);
-        }
-
-        .alert-error ul {
-            margin: 0;
-            padding-left: 18px;
-        }
-
-        .field {
-            margin-bottom: 12px;
-        }
-
-        .label {
-            display: inline-block;
-            margin-bottom: 6px;
-            font-size: .84rem;
-            font-weight: 800;
-            color: #2f5a49;
-            letter-spacing: .02em;
-            text-transform: uppercase;
-        }
-
-        .input {
-            width: 100%;
-            border: 1px solid var(--line);
-            border-radius: 11px;
-            padding: 11px 12px;
-            font: inherit;
-            color: var(--ink);
-            background: #fff;
-            outline: none;
-            transition: border-color .18s ease, box-shadow .18s ease;
-        }
-
-        .input:focus {
-            border-color: #5aa77e;
-            box-shadow: 0 0 0 3px rgba(86, 166, 122, .18);
-        }
-
-        .check-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 12px;
-            margin: 6px 0 2px;
-            flex-wrap: wrap;
-        }
-
-        .check {
-            display: inline-flex;
-            align-items: center;
-            gap: 7px;
-            color: #4e7161;
-            font-size: .9rem;
-        }
-
-        .link {
-            color: #1a6e49;
+        .auth-brand {
+            color: #173e2f;
             text-decoration: none;
-            font-size: .9rem;
+            position: relative;
+            background: linear-gradient(145deg, #ffffff, #f2faf5);
+            border: 1px solid rgba(18, 71, 53, .2);
+            border-radius: 1rem;
+            padding: .65rem .95rem;
+            box-shadow:
+                0 .9rem 1.7rem rgba(16, 57, 40, .18),
+                inset 0 1px 0 rgba(255, 255, 255, .85);
+            transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+        }
+        .auth-brand:hover {
+            transform: translateY(-2px) scale(1.01);
+            border-color: rgba(18, 71, 53, .35);
+            box-shadow:
+                0 1.1rem 2rem rgba(16, 57, 40, .24),
+                inset 0 1px 0 rgba(255, 255, 255, .92);
+        }
+        .auth-brand::after {
+            content: "";
+            position: absolute;
+            inset: -1px;
+            border-radius: 1rem;
+            border: 1px solid rgba(255, 255, 255, .5);
+            pointer-events: none;
+        }
+        .auth-logo-icon {
+            width: 38px;
+            height: auto;
+            display: block;
+            filter: drop-shadow(0 3px 5px rgba(16, 57, 40, .25));
+        }
+        .auth-logo-text {
+            width: 188px;
+            max-width: 48vw;
+            height: auto;
+            display: block;
+            filter: drop-shadow(0 1px 2px rgba(16, 57, 40, .2));
+        }
+        .auth-form-wrap {
+            background: #f7fcf9;
+            padding: 2rem 1.6rem;
+        }
+        .required-mark {
+            color: #b53737;
+            font-weight: 800;
+            margin-left: .2rem;
+        }
+        .social-btn {
+            border-radius: .7rem;
             font-weight: 700;
         }
-
-        .link:hover { text-decoration: underline; }
-
-        .btn {
-            width: 100%;
-            border: none;
-            border-radius: 11px;
-            background: linear-gradient(130deg, var(--brand-700), var(--brand-900));
-            color: #fff;
-            font: inherit;
+        .login-btn {
+            border-radius: .7rem;
             font-weight: 800;
-            padding: 12px;
-            cursor: pointer;
-            margin-top: 14px;
-            box-shadow: 0 10px 22px rgba(16, 57, 40, .22);
+            background: linear-gradient(130deg, #1b6c49, #103928);
+            border: none;
         }
-
-        .btn:hover { filter: brightness(1.05); }
-
-        .bottom {
-            margin-top: 13px;
-            color: var(--muted);
-            font-size: .9rem;
-            text-align: center;
+        .legend-chip {
+            border-radius: 999px;
+            border: 1px solid #cdded3;
+            background: #ffffff;
+            color: #3a6654;
+            font-size: .8rem;
+            font-weight: 700;
+            padding: .35rem .7rem;
         }
-
-        @media (max-width: 940px) {
-            .auth-wrap {
-                grid-template-columns: 1fr;
-            }
-
-            .auth-cover {
-                padding: 26px 24px;
-            }
-
-            .auth-card {
-                padding: 24px 20px;
-            }
+        .text-muted-soft {
+            color: #628372;
         }
     </style>
 </head>
 <body>
-    <main class="auth-wrap">
-        <section class="auth-cover">
-            <a href="{{ url('/') }}" class="brand">Kusay.pe</a>
+    <main class="auth-shell">
+        <div class="card auth-card">
+            <div class="row g-0">
+                <!-- Menu lateral de marca -->
+                <section class="col-lg-5">
+                    <div class="auth-cover d-flex flex-column justify-content-between">
+                        <div>
+                            <a href="{{ url('/') }}" class="auth-brand d-inline-flex align-items-center gap-2">
+                                <img src="{{ asset('assets/image/png kusay.png') }}" alt="Kusay" class="auth-logo-icon">
+                                <img src="{{ asset('assets/image/png 2.png') }}" alt="Kusay.pe" class="auth-logo-text">
+                            </a>
+                        </div>
+                        <div>
+                            <h1 class="display-6 fw-bold mb-3">Inicia sesion y gestiona tus publicaciones</h1>
+                            <p class="mb-3 text-white-50">Controla tus propiedades, solicitudes y visitas desde un solo panel.</p>
+                            <ul class="list-unstyled mb-0">
+                                <li class="mb-2 d-flex align-items-center gap-2"><i class="bi bi-check-circle-fill"></i><span>Publica propiedades gratis</span></li>
+                                <li class="mb-2 d-flex align-items-center gap-2"><i class="bi bi-check-circle-fill"></i><span>Responde solicitudes rapidamente</span></li>
+                                <li class="d-flex align-items-center gap-2"><i class="bi bi-check-circle-fill"></i><span>Monitorea favoritos y clics</span></li>
+                            </ul>
+                        </div>
+                        <p class="mb-0 text-white-50">No tienes cuenta? <a href="{{ route('register') }}" class="link-light fw-semibold">Registrate aqui</a></p>
+                    </div>
+                </section>
 
-            <div class="cover-copy">
-                <h1>Accede a tu panel y publica propiedades</h1>
-                <p>Gestiona tus anuncios, fotos y contactos desde una sola cuenta.</p>
-                <div class="cover-points">
-                    <span>Publica propiedades gratis</span>
-                    <span>Recibe mensajes directos</span>
-                    <span>Administra todo desde tu panel</span>
-                </div>
+                <!-- Body del formulario -->
+                <section class="col-lg-7">
+                    <div class="auth-form-wrap">
+                        <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+                            <div>
+                                <h2 class="h3 fw-bold mb-1">Iniciar sesion</h2>
+                                <p class="text-muted-soft mb-0">Ingresa con tu correo y contrasena.</p>
+                            </div>
+                            <!-- <span class="legend-chip">Campos con <span class="required-mark">*</span> son obligatorios</span> -->
+                        </div>
+
+                        @if (session('status'))
+                            <div class="alert alert-success py-2">{{ session('status') }}</div>
+                        @endif
+
+                        @if ($errors->any())
+                            <div class="alert alert-danger py-2">
+                                <ul class="mb-0 ps-3">
+                                    @foreach ($errors->all() as $error)
+                                        <li>{{ $error }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
+
+                        <form method="POST" action="{{ route('login') }}" novalidate>
+                            @csrf
+
+                            <div class="mb-3">
+                                <label for="email" class="form-label fw-semibold mb-1">Correo electronico <span class="required-mark">*</span></label>
+                                <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus autocomplete="username" class="form-control form-control-lg">
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="password" class="form-label fw-semibold mb-1">Contrasena <span class="required-mark">*</span></label>
+                                <input id="password" type="password" name="password" required autocomplete="current-password" class="form-control form-control-lg">
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="remember_me" name="remember" {{ old('remember') ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="remember_me">Recordarme</label>
+                                </div>
+                                @if (Route::has('password.request'))
+                                    <a href="{{ route('password.request') }}" class="link-success fw-semibold">Olvidaste tu contrasena?</a>
+                                @endif
+                            </div>
+
+                            <button type="submit" class="btn btn-success btn-lg w-100 login-btn">Entrar</button>
+                        </form>
+
+                        <div class="position-relative text-center my-3">
+                            <hr>
+                            <span class="position-absolute top-50 start-50 translate-middle px-3 bg-light text-muted small">o continua con</span>
+                        </div>
+
+                        <div class="row g-2">
+                            <div class="col-sm-6">
+                                <a href="{{ route('auth.social.redirect', ['provider' => 'google']) }}" class="btn btn-outline-secondary w-100 social-btn">
+                                    <i class="bi bi-google me-2"></i>Google
+                                </a>
+                            </div>
+                            <div class="col-sm-6">
+                                <a href="{{ route('auth.social.redirect', ['provider' => 'facebook']) }}" class="btn btn-outline-primary w-100 social-btn">
+                                    <i class="bi bi-facebook me-2"></i>Facebook
+                                </a>
+                            </div>
+                        </div>
+
+                        <p class="text-center mt-4 mb-0 text-muted-soft">
+                            Quieres publicar una propiedad ?
+                            <a href="{{ route('register') }}" class="fw-semibold link-success"> Crea tu cuenta</a>
+                        </p>
+                    </div>
+                </section>
             </div>
-
-            <a href="{{ route('register') }}" class="link" style="color:#d6f3e3; font-weight:800;">No tienes cuenta? Crea tu cuenta</a>
-        </section>
-
-        <section class="auth-card">
-            <h1 class="title">Iniciar sesion</h1>
-            <p class="subtitle">Ingresa con tu correo y contrasena.</p>
-
-            @if (session('status'))
-                <div class="alert alert-ok">{{ session('status') }}</div>
-            @endif
-
-            @if ($errors->any())
-                <div class="alert alert-error">
-                    <ul>
-                        @foreach ($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-            @endif
-
-            <form method="POST" action="{{ route('login') }}">
-                @csrf
-
-                <div class="field">
-                    <label class="label" for="email">Correo</label>
-                    <input class="input" id="email" type="email" name="email" value="{{ old('email') }}" required autofocus autocomplete="username">
-                </div>
-
-                <div class="field">
-                    <label class="label" for="password">Contrasena</label>
-                    <input class="input" id="password" type="password" name="password" required autocomplete="current-password">
-                </div>
-
-                <div class="check-row">
-                    <label class="check" for="remember_me">
-                        <input id="remember_me" type="checkbox" name="remember" {{ old('remember') ? 'checked' : '' }}>
-                        <span>Recordarme</span>
-                    </label>
-
-                    @if (Route::has('password.request'))
-                        <a class="link" href="{{ route('password.request') }}">Olvidaste tu contrasena?</a>
-                    @endif
-                </div>
-
-                <button class="btn" type="submit">Entrar</button>
-            </form>
-
-            <p class="bottom">
-                Quieres publicar una propiedad?
-                <a class="link" href="{{ route('register') }}">Publica gratis</a>
-            </p>
-        </section>
+        </div>
     </main>
 </body>
 </html>

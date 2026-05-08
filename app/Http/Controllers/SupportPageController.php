@@ -2,10 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\SupportContentRepository;
 use Illuminate\View\View;
 
 class SupportPageController extends Controller
 {
+    public function __construct(
+        private readonly SupportContentRepository $supportContentRepository
+    ) {
+    }
+
     public function index(): View
     {
         return $this->renderPage('soporte', 'Soporte');
@@ -33,40 +39,11 @@ class SupportPageController extends Controller
 
     private function renderPage(string $slug, string $fallbackTitle): View
     {
-        $payload = $this->loadPayload($slug);
+        $payload = $this->supportContentRepository->load($slug);
 
         return view('portal.support', [
             'payload' => $payload,
             'title' => $payload['title'] ?? $fallbackTitle,
         ]);
     }
-
-    /**
-     * @return array{
-     *   slug: string,
-     *   title: string,
-     *   updated_at: string,
-     *   summary: string,
-     *   sections: array<int, array{
-     *     title: string,
-     *     paragraphs: array<int, string>,
-     *     bullets: array<int, string>
-     *   }>
-     * }
-     */
-    private function loadPayload(string $slug): array
-    {
-        $path = resource_path('data/support/'.$slug.'.json');
-        if (! is_file($path)) {
-            abort(404);
-        }
-
-        $decoded = json_decode((string) file_get_contents($path), true);
-        if (! is_array($decoded)) {
-            abort(500, 'No se pudo leer el contenido de soporte.');
-        }
-
-        return $decoded;
-    }
 }
-

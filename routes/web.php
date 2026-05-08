@@ -9,7 +9,6 @@ use App\Http\Controllers\PropiedadController;
 use App\Http\Controllers\SupportPageController;
 use Illuminate\Support\Facades\Route;
 
-
 // index de la pagina
 Route::get('/', [PortalController::class, 'index'])->name('home');
 Route::get('/portal/propiedades/{propiedad}', [PortalController::class, 'show'])
@@ -21,6 +20,18 @@ Route::post('/portal/propiedades/{propiedad}/clic', [PortalController::class, 'r
 Route::post('/portal/propiedades/{propiedad}/favorito/toggle', [PortalController::class, 'toggleFavorito'])
     ->whereNumber('propiedad')
     ->name('portal.propiedades.favoritos.toggle');
+Route::post('/portal/propiedades/{propiedad}/contacto', [PortalController::class, 'solicitarContacto'])
+    ->middleware(['auth', 'verified'])
+    ->whereNumber('propiedad')
+    ->name('portal.propiedades.contacto');
+Route::post('/portal/propiedades/{propiedad}/comentarios', [PortalController::class, 'storeComentario'])
+    ->middleware(['auth', 'verified'])
+    ->whereNumber('propiedad')
+    ->name('portal.propiedades.comentarios.store');
+Route::post('/portal/propiedades/{propiedad}/resenas', [PortalController::class, 'storeResena'])
+    ->middleware(['auth', 'verified'])
+    ->whereNumber('propiedad')
+    ->name('portal.propiedades.resenas.store');
 Route::get('/soporte', [SupportPageController::class, 'index'])->name('soporte.index');
 Route::get('/soporte/centro-de-ayuda', [SupportPageController::class, 'helpCenter'])->name('soporte.ayuda');
 Route::get('/soporte/terminos-y-condiciones', [SupportPageController::class, 'terms'])->name('soporte.terminos');
@@ -33,15 +44,12 @@ Route::get('/portal/propiedades/{propiedad}/imagenes/{imagen}', [PortalControlle
     ->whereNumber('imagen')
     ->name('portal.propiedades.imagen');
 
-Route::get('/login', function () {
-    return view('login');
-})->middleware(['auth', 'verified'])->name('login');
-
-
 // Gestion de propiedades
 Route::middleware('auth')->group(function () {
+    Route::middleware('verified')->group(function () {
     // vista publicacion por usuarios
     Route::get('/mis-publicaciones', [PropiedadController::class, 'misPublicaciones'])->name('propiedades.mine');
+    Route::get('/mis-solicitudes', [PropiedadController::class, 'solicitudes'])->name('propiedades.solicitudes');
    // edita publicaciones
     Route::get('/mis-publicaciones/{propiedad}/editar', [PropiedadController::class, 'edit'])->name('propiedades.edit');
     
@@ -66,6 +74,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/propiedades/registro/datos', [PropiedadController::class, 'createDatos'])->name('propiedades.datos.create');
     Route::post('/propiedades', [PropiedadController::class, 'store'])->name('propiedades.store');
     Route::get('/propiedades/{propiedad}/publicada', [PropiedadController::class, 'publicada'])->name('propiedades.publicada');
+    });
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::get('/profile/photo', [ProfileController::class, 'photo'])->name('profile.photo');
@@ -73,15 +82,17 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {
 
 
     //rutas de administrador
     Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
     Route::get('/paneladministrativo', [AdminTipoPropiedadController::class, 'index'])->name('PanelAdministrativo');
+    Route::get('/paneladministrativo/soporte', [AdminTipoPropiedadController::class, 'support'])->name('PanelAdministrativo.soporte');
     Route::post('/paneladministrativo/tipos', [AdminTipoPropiedadController::class, 'store'])->name('PanelAdministrativo.tipos.store');
     Route::patch('/paneladministrativo/tipos/{tipoPropiedad}', [AdminTipoPropiedadController::class, 'update'])->name('PanelAdministrativo.tipos.update');
     Route::delete('/paneladministrativo/tipos/{tipoPropiedad}', [AdminTipoPropiedadController::class, 'destroy'])->name('PanelAdministrativo.tipos.destroy');
+    Route::patch('/paneladministrativo/soporte', [AdminTipoPropiedadController::class, 'updateSupport'])->name('PanelAdministrativo.soporte.update');
 
     Route::get('/paneladministrativo/usuarios', [AdminUserController::class, 'index'])->name('PanelAdministrativo.usuarios.index');
     Route::post('/paneladministrativo/usuarios', [AdminUserController::class, 'store'])->name('PanelAdministrativo.usuarios.store');

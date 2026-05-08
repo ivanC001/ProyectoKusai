@@ -57,6 +57,12 @@
         font-size: clamp(1.4rem, 2.8vw, 2rem);
         line-height: 1;
     }
+    .price-usd {
+        margin: 0 0 10px;
+        color: #2f7d57;
+        font-size: .94rem;
+        font-weight: 800;
+    }
     .meta {
         margin: 0 0 8px;
         color: #5f7f71;
@@ -66,6 +72,30 @@
         flex-wrap: wrap;
         gap: 6px;
         margin-bottom: 10px;
+    }
+    .address-grid {
+        display: grid;
+        gap: 8px;
+        margin-bottom: 10px;
+    }
+    .address-box {
+        border: 1px solid #cbdcd2;
+        border-radius: 12px;
+        background: #f6faf8;
+        padding: 10px;
+    }
+    .address-box span {
+        display: block;
+        color: #648477;
+        font-size: .74rem;
+        font-weight: 900;
+        letter-spacing: .05em;
+        text-transform: uppercase;
+    }
+    .address-box strong {
+        display: block;
+        margin-top: 4px;
+        color: #214b3a;
     }
     .chip {
         border-radius: 999px;
@@ -158,11 +188,28 @@
 
                 <div class="content">
                     <p class="price">S/ {{ number_format((float) $propiedad->precio, 2, '.', ',') }}</p>
+                    @if ($propiedad->precio_usd !== null)
+                        <p class="price-usd">US$ {{ number_format((float) $propiedad->precio_usd, 2, '.', ',') }}</p>
+                    @endif
                     <p class="meta">
                         {{ $propiedad->ubicacion?->distrito ?? 'Sin distrito' }},
                         {{ $propiedad->ubicacion?->provincia ?? 'Sin provincia' }},
                         {{ $propiedad->ubicacion?->departamento ?? 'Sin departamento' }}
                     </p>
+                    <div class="address-grid">
+                        <div class="address-box">
+                            <span>Direccion completa</span>
+                            <strong>{{ $propiedad->direccion ?: 'No especificada' }}</strong>
+                        </div>
+                        <div class="address-box">
+                            <span>Referencia</span>
+                            <strong>{{ $propiedad->referencia ?: 'No especificada' }}</strong>
+                        </div>
+                        <div class="address-box">
+                            <span>Descripción</span>
+                            <p class="desc">{{ $propiedad->descripcion }}</p>
+                        </div>
+                    </div>
 
                     <div class="chips">
                         <span class="chip">{{ ucfirst($propiedad->tipo) }}</span>
@@ -170,11 +217,12 @@
                         <span class="chip">{{ $propiedad->tipoPropiedad?->nombre ?? 'Propiedad' }}</span>
                         <span class="chip">{{ $propiedad->imagenes_count }} foto(s)</span>
                         <span class="chip">{{ $propiedad->contactos_count }} contacto(s)</span>
+                        <span class="chip">{{ $propiedad->comentarios_count }} comentario(s)</span>
                         <span class="chip">{{ $propiedad->visitas_count }} clic(s)</span>
                         <span class="chip">{{ $propiedad->favoritos_count }} favorito(s)</span>
                     </div>
 
-                    <p class="desc">{{ $propiedad->descripcion }}</p>
+                    
                 </div>
             </article>
 

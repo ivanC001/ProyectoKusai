@@ -49,6 +49,11 @@ class ProfileController extends Controller
         $validated = $request->validated();
 
         unset($validated['foto_perfil']);
+        if (! empty($user->dni)) {
+            unset($validated['dni']);
+        } elseif (array_key_exists('dni', $validated)) {
+            $validated['dni'] = trim((string) $validated['dni']);
+        }
 
         if ($request->hasFile('foto_perfil')) {
             if (! empty($user->foto_perfil) && Storage::disk('public')->exists($user->foto_perfil)) {

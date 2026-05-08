@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{{ asset('assets/image/png kusay.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('assets/image/png kusay.png') }}">
     <title>Registro de usuario | Kusay.pe</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -207,6 +209,16 @@
             background: linear-gradient(130deg, var(--brand-700), var(--brand-900));
             color: #fff;
         }
+        .tipo-hint {
+            margin: -4px 0 12px;
+            border: 1px solid #cfe0d6;
+            background: #f7fbf9;
+            border-radius: 10px;
+            color: #476c5b;
+            font-size: .82rem;
+            font-weight: 700;
+            padding: 8px 10px;
+        }
 
         .grid {
             display: grid;
@@ -248,13 +260,57 @@
             border-color: #5aa77e;
             box-shadow: 0 0 0 3px rgba(86, 166, 122, .18);
         }
+        .required-hint {
+            border: 1px solid #cfe0d6;
+            background: #f6fbf8;
+            border-radius: 10px;
+            color: #466b5a;
+            font-size: .84rem;
+            font-weight: 700;
+            padding: 9px 11px;
+            margin-bottom: 12px;
+        }
+        .field-help {
+            margin-top: 5px;
+            color: #618173;
+            font-size: .8rem;
+            line-height: 1.35;
+        }
 
         .terms {
-            display: inline-flex;
-            align-items: start;
+            display: flex;
+            align-items: flex-start;
             gap: 8px;
             color: #496d5c;
             font-size: .9rem;
+        }
+        .terms-box {
+            border: 1px solid #cfe0d6;
+            border-radius: 12px;
+            background: #f7fbf8;
+            padding: 11px 12px;
+        }
+        .terms-check {
+            margin-top: 2px;
+        }
+        .terms-copy {
+            display: grid;
+            gap: 4px;
+        }
+        .terms-copy strong {
+            color: #164c37;
+            font-size: .93rem;
+            line-height: 1.35;
+        }
+        .terms-link {
+            color: #166b45;
+            font-size: .86rem;
+            font-weight: 800;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+        .terms-link:hover {
+            color: #0f5236;
         }
 
         .actions {
@@ -371,6 +427,10 @@
                     </div>
                 @endif
 
+                <div class="required-hint">
+                    Los campos obligatorios cambian segun el tipo de persona: DNI para persona natural y RUC para empresa.
+                </div>
+
                 <form method="POST" action="{{ route('register') }}" novalidate>
                     @csrf
 
@@ -378,27 +438,29 @@
                         <button type="button" data-tipo="natural" class="{{ old('tipo_persona', 'natural') === 'natural' ? 'active' : '' }}">Persona natural</button>
                         <button type="button" data-tipo="empresa" class="{{ old('tipo_persona') === 'empresa' ? 'active' : '' }}">Empresa</button>
                     </div>
+                    <div id="tipo-hint" class="tipo-hint">Selecciona tu tipo de persona. El formulario mostrara campos segun corresponda.</div>
 
                     <input type="hidden" id="tipo_persona" name="tipo_persona" value="{{ old('tipo_persona', 'natural') }}">
 
                     <div class="grid">
                         <div class="field">
-                            <label for="name">Nombres</label>
+                            <label id="name-label" for="name">Nombres</label>
                             <input id="name" type="text" name="name" value="{{ old('name') }}" required autocomplete="name" autofocus>
                         </div>
 
                         <div class="field js-natural">
-                            <label for="apellidos">Apellidos</label>
+                            <label id="apellidos-label" for="apellidos">Apellidos</label>
                             <input id="apellidos" type="text" name="apellidos" value="{{ old('apellidos') }}" autocomplete="family-name">
                         </div>
 
                         <div class="field js-natural">
                             <label for="dni">DNI</label>
                             <input id="dni" type="text" name="dni" value="{{ old('dni') }}" maxlength="20" inputmode="numeric">
+                            <div class="field-help">Ingresa tu DNI sin espacios ni guiones.</div>
                         </div>
 
                         <div class="field js-empresa">
-                            <label for="empresa">Razon social</label>
+                            <label id="empresa-label" for="empresa">Razon social</label>
                             <input id="empresa" type="text" name="empresa" value="{{ old('empresa') }}">
                         </div>
 
@@ -410,11 +472,13 @@
                         <div class="field js-empresa">
                             <label for="ruc">RUC</label>
                             <input id="ruc" type="text" name="ruc" value="{{ old('ruc') }}" maxlength="20" inputmode="numeric">
+                            <div class="field-help">Ingresa el RUC de la empresa para validar tu perfil comercial.</div>
                         </div>
 
                         <div class="field">
                             <label for="email">Correo</label>
                             <input id="email" type="email" name="email" value="{{ old('email') }}" required autocomplete="username">
+                            <div class="field-help">Correos empresariales suelen corresponder a persona juridica.</div>
                         </div>
 
                         <div class="field">
@@ -430,6 +494,7 @@
                         <div class="field">
                             <label for="password">Contrasena</label>
                             <input id="password" type="password" name="password" required autocomplete="new-password">
+                            <div class="field-help">Usa una contrasena segura. Recomendado: minimo 8 caracteres.</div>
                         </div>
 
                         <div class="field">
@@ -438,10 +503,17 @@
                         </div>
 
                         <div class="field full">
-                            <label class="terms" for="acepta_terminos">
-                                <input id="acepta_terminos" type="checkbox" name="acepta_terminos" value="1" {{ old('acepta_terminos') ? 'checked' : '' }}>
-                                <span>Acepto los terminos y condiciones del portal.</span>
-                            </label>
+                            <div class="terms-box">
+                                <label class="terms" for="acepta_terminos">
+                                    <input class="terms-check" id="acepta_terminos" type="checkbox" name="acepta_terminos" value="1" {{ old('acepta_terminos') ? 'checked' : '' }}>
+                                    <span class="terms-copy">
+                                        <strong>Acepto los terminos y condiciones del portal.</strong>
+                                        <a class="terms-link" href="{{ route('soporte.terminos') }}" target="_blank" rel="noopener noreferrer">
+                                            Leer terminos y condiciones
+                                        </a>
+                                    </span>
+                                </label>
+                            </div>
                         </div>
                     </div>
 
@@ -461,8 +533,18 @@
         const empresaFields = document.querySelectorAll('.js-empresa');
         const dniInput = document.getElementById('dni');
         const rucInput = document.getElementById('ruc');
+        const emailInput = document.getElementById('email');
+        const tipoHint = document.getElementById('tipo-hint');
+        const nameLabel = document.getElementById('name-label');
+        const apellidosLabel = document.getElementById('apellidos-label');
+        const empresaLabel = document.getElementById('empresa-label');
+        let manualSelection = false;
+        const personalDomains = [
+            'gmail.com', 'hotmail.com', 'outlook.com', 'yahoo.com', 'icloud.com',
+            'live.com', 'msn.com', 'aol.com', 'proton.me', 'protonmail.com'
+        ];
 
-        const applyTipo = (tipo) => {
+        const applyTipo = (tipo, reason = '') => {
             tipoInput.value = tipo;
 
             buttons.forEach((btn) => {
@@ -484,13 +566,73 @@
             if (rucInput) {
                 rucInput.required = tipo === 'empresa';
             }
+
+            if (nameLabel) {
+                nameLabel.textContent = tipo === 'empresa' ? 'Nombre del representante' : 'Nombres';
+            }
+            if (apellidosLabel) {
+                apellidosLabel.textContent = tipo === 'empresa' ? 'Apellidos del representante' : 'Apellidos';
+            }
+            if (empresaLabel) {
+                empresaLabel.textContent = 'Razon social';
+            }
+
+            if (tipoHint) {
+                if (reason !== '') {
+                    tipoHint.textContent = reason;
+                } else if (tipo === 'empresa') {
+                    tipoHint.textContent = 'Persona juridica: completa razon social y RUC para validar la empresa.';
+                } else {
+                    tipoHint.textContent = 'Persona natural: completa nombres, apellidos y DNI.';
+                }
+            }
+        };
+
+        const detectTipoByInputs = () => {
+            const dniValue = (dniInput?.value || '').trim();
+            const rucValue = (rucInput?.value || '').trim();
+            const emailValue = (emailInput?.value || '').trim().toLowerCase();
+
+            if (rucValue !== '') {
+                applyTipo('empresa', 'Detectamos RUC ingresado: cambiamos a persona juridica.');
+                return;
+            }
+
+            if (dniValue !== '') {
+                applyTipo('natural', 'Detectamos DNI ingresado: cambiamos a persona natural.');
+                return;
+            }
+
+            if (manualSelection) {
+                return;
+            }
+
+            if (emailValue.includes('@')) {
+                const domain = emailValue.split('@')[1] || '';
+                if (domain !== '' && !personalDomains.includes(domain)) {
+                    applyTipo('empresa', 'Correo con dominio empresarial detectado. Puedes cambiarlo manualmente si eres persona natural.');
+                } else if (domain !== '') {
+                    applyTipo('natural', 'Correo personal detectado. Puedes cambiar a persona juridica si corresponde.');
+                }
+            }
         };
 
         buttons.forEach((btn) => {
-            btn.addEventListener('click', () => applyTipo(btn.dataset.tipo));
+            btn.addEventListener('click', () => {
+                manualSelection = true;
+                applyTipo(btn.dataset.tipo, btn.dataset.tipo === 'empresa'
+                    ? 'Seleccionaste persona juridica: completa razon social y RUC.'
+                    : 'Seleccionaste persona natural: completa apellidos y DNI.'
+                );
+            });
         });
 
+        emailInput?.addEventListener('blur', detectTipoByInputs);
+        dniInput?.addEventListener('input', detectTipoByInputs);
+        rucInput?.addEventListener('input', detectTipoByInputs);
+
         applyTipo(tipoInput.value || 'natural');
+        detectTipoByInputs();
     </script>
 </body>
 </html>

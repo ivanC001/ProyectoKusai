@@ -11,66 +11,96 @@
     $galeriaImagenes = $propiedad->imagenes->isNotEmpty()
         ? $propiedad->imagenes
         : collect($propiedad->portadaImagen ? [$propiedad->portadaImagen] : []);
+
+    $nombreAnunciante = trim(($propiedad->usuario?->name ?? '').' '.($propiedad->usuario?->apellidos ?? '')) ?: 'Anunciante';
+    $nombreComprador = auth()->check() ? trim(auth()->user()->name.' '.auth()->user()->apellidos) : '';
+    $telefonoComprador = auth()->user()?->telefono ?? '';
+    $comentariosPublicos = $propiedad->comentarios->sortByDesc('created_at')->values();
+    $comentariosConPuntaje = $comentariosPublicos->whereNotNull('puntaje');
+    $promedioComentarios = $comentariosConPuntaje->isNotEmpty()
+        ? number_format((float) $comentariosConPuntaje->avg('puntaje'), 1, '.', ',')
+        : null;
 @endphp
 
 <div class="wrap">
     <header class="top">
         <a class="crumb" href="{{ route('home') }}">Volver al inicio</a>
         <h1 class="title">{{ $propiedad->titulo }}</h1>
-        <p class="subtitle">{{ $propiedad->direccion }}</p>
+        <p class="subtitle">
+            {{ $propiedad->ubicacion?->distrito ?? 'Sin distrito' }},
+            {{ $propiedad->ubicacion?->provincia ?? 'Sin provincia' }},
+            {{ $propiedad->ubicacion?->departamento ?? 'Sin departamento' }}
+        </p>
     </header>
 
     <div class="layout">
         <article class="panel">
-            <section class="gallery" data-gallery>
-                <div class="gallery-stage">
-                    @forelse ($galeriaImagenes as $imagen)
-                        <figure class="gallery-slide {{ $loop->first ? 'active' : '' }}" data-slide>
-                            <img
-                                src="{{ route('portal.propiedades.imagen', [$propiedad, $imagen]) }}"
-                                alt="Foto {{ $loop->iteration }} de {{ $propiedad->titulo }}"
-                            >
-                        </figure>
-                    @empty
-                        <div class="gallery-empty">Sin fotos disponibles</div>
-                    @endforelse
-
-                    @if ($galeriaImagenes->count() > 1)
-                        <button class="gallery-nav prev" type="button" data-gallery-prev aria-label="Foto anterior">&#10094;</button>
-                        <button class="gallery-nav next" type="button" data-gallery-next aria-label="Foto siguiente">&#10095;</button>
-                        <div class="gallery-counter">
-                            <span data-gallery-current>1</span>/<span>{{ $galeriaImagenes->count() }}</span>
-                        </div>
-                    @endif
-                </div>
-
-                @if ($galeriaImagenes->count() > 1)
-                    <div class="gallery-thumbs">
+            <section class="gallery" aria-label="Galeria de fotos de la propiedad">
+                @if ($galeriaImagenes->isNotEmpty())
+                    <div class="gallery-stage" id="detalle-gallery-stage">
                         @foreach ($galeriaImagenes as $imagen)
-                            <button
-                                class="gallery-thumb {{ $loop->first ? 'active' : '' }}"
-                                type="button"
-                                data-gallery-thumb
-                                data-index="{{ $loop->index }}"
-                                aria-label="Ver foto {{ $loop->iteration }}"
-                            >
+                            <figure class="gallery-slide {{ $loop->first ? 'active' : '' }}" data-gallery-slide aria-hidden="{{ $loop->first ? 'false' : 'true' }}">
                                 <img
                                     src="{{ route('portal.propiedades.imagen', [$propiedad, $imagen]) }}"
-                                    alt="Miniatura {{ $loop->iteration }}"
+                                    alt="Foto {{ $loop->iteration }} de {{ $propiedad->titulo }}"
+                                    loading="{{ $loop->first ? 'eager' : 'lazy' }}"
                                 >
-                            </button>
+                            </figure>
                         @endforeach
+
+                        @if ($galeriaImagenes->count() > 1)
+                            <button type="button" class="gallery-nav prev" id="gallery-prev" aria-label="Foto anterior">&#10094;</button>
+                            <button type="button" class="gallery-nav next" id="gallery-next" aria-label="Siguiente foto">&#10095;</button>
+                            <div class="gallery-counter" id="gallery-counter">1 / {{ $galeriaImagenes->count() }}</div>
+                        @endif
+                    </div>
+
+                    @if ($galeriaImagenes->count() > 1)
+                        <div class="gallery-thumbs" id="gallery-thumbs">
+                            @foreach ($galeriaImagenes as $imagen)
+                                <button
+                                    type="button"
+                                    class="gallery-thumb {{ $loop->first ? 'active' : '' }}"
+                                    data-gallery-thumb
+                                    data-index="{{ $loop->index }}"
+                                    aria-label="Ver foto {{ $loop->iteration }}"
+                                    aria-pressed="{{ $loop->first ? 'true' : 'false' }}"
+                                >
+                                    <img
+                                        src="{{ route('portal.propiedades.imagen', [$propiedad, $imagen]) }}"
+                                        alt="Miniatura {{ $loop->iteration }} de {{ $propiedad->titulo }}"
+                                        loading="lazy"
+                                    >
+                                </button>
+                            @endforeach
+                        </div>
+                    @endif
+                @else
+                    <div class="gallery-stage">
+                        <div class="gallery-empty">Sin fotos disponibles</div>
                     </div>
                 @endif
             </section>
 
             <div class="content">
                 <p class="price">S/ {{ number_format((float) $propiedad->precio, 2, '.', ',') }}</p>
+                @if ($propiedad->precio_usd !== null)
+                    <p class="price-usd">US$ {{ number_format((float) $propiedad->precio_usd, 2, '.', ',') }}</p>
+                @endif
                 <p class="meta">
                     {{ $propiedad->ubicacion?->distrito ?? 'Sin distrito' }},
                     {{ $propiedad->ubicacion?->provincia ?? 'Sin provincia' }},
                     {{ $propiedad->ubicacion?->departamento ?? 'Sin departamento' }}
                 </p>
+
+                <div class="address-card">
+                    <span>Direccion completa</span>
+                    <strong>{{ $propiedad->direccion ?: 'No especificada' }}</strong>
+                </div>
+                <div class="address-card">
+                    <span>Referencia</span>
+                    <strong>{{ $propiedad->referencia ?: 'No especificada' }}</strong>
+                </div>
 
                 <div class="chips">
                     <span class="chip">{{ ucfirst($propiedad->tipo) }}</span>
@@ -78,6 +108,7 @@
                     <span class="chip">{{ $propiedad->imagenes_count }} foto(s)</span>
                     <span class="chip">{{ $propiedad->contactos_count }} contacto(s)</span>
                     <span class="chip">{{ $propiedad->visitas_count }} clic(s)</span>
+                    <span class="chip">{{ $propiedad->comentarios_count }} comentario(s)</span>
                     <span class="chip" id="detalle-favoritos-chip">{{ $propiedad->favoritos_count }} favorito(s)</span>
                 </div>
 
@@ -101,6 +132,80 @@
                 </dl>
 
                 <p class="desc">{{ $propiedad->descripcion }}</p>
+
+                <section class="comments-box">
+                    <div class="comments-head">
+                        <h2>Comentarios de usuarios</h2>
+                        @if ($promedioComentarios !== null)
+                            <span>{{ $promedioComentarios }} / 5 · {{ $comentariosPublicos->count() }} comentario(s)</span>
+                        @else
+                            <span>{{ $comentariosPublicos->count() }} comentario(s)</span>
+                        @endif
+                    </div>
+
+                    @if (session('comentario_success'))
+                        <p class="comments-alert success">{{ session('comentario_success') }}</p>
+                    @endif
+
+                    @if ($errors->comentario->any())
+                        <p class="comments-alert error">Revisa tu comentario antes de publicar.</p>
+                    @endif
+
+                    @auth
+                        <form class="comments-form" method="POST" action="{{ route('portal.propiedades.comentarios.store', $propiedad) }}">
+                            @csrf
+                            <label>Puntuacion</label>
+                            <div class="rating-stars" role="radiogroup" aria-label="Puntuacion de la propiedad">
+                                @for ($i = 5; $i >= 1; $i--)
+                                    <input
+                                        type="radio"
+                                        id="puntaje_{{ $i }}"
+                                        name="puntaje"
+                                        value="{{ $i }}"
+                                        @checked((string) old('puntaje', '5') === (string) $i)
+                                        required
+                                    >
+                                    <label for="puntaje_{{ $i }}" title="{{ $i }} estrella(s)">&#9733;</label>
+                                @endfor
+                            </div>
+                            @error('puntaje', 'comentario') <span class="error-text">{{ $message }}</span> @enderror
+
+                            <label for="comentario_mensaje">Escribe tu comentario</label>
+                            <textarea
+                                id="comentario_mensaje"
+                                name="mensaje"
+                                placeholder="Comparte tu opinion o consulta sobre esta propiedad..."
+                                required
+                            >{{ old('mensaje') }}</textarea>
+                            @error('mensaje', 'comentario') <span class="error-text">{{ $message }}</span> @enderror
+                            <button type="submit">Publicar comentario</button>
+                        </form>
+                    @else
+                        <p class="comments-login">
+                            <a href="{{ route('login') }}">Inicia sesion</a> para dejar un comentario en esta propiedad.
+                        </p>
+                    @endauth
+
+                    <div class="comments-list">
+                        @forelse ($comentariosPublicos as $comentario)
+                            <article class="comment-item">
+                                <div class="comment-avatar">{{ strtoupper(substr(trim(($comentario->usuario?->name ?? 'U')), 0, 1)) }}</div>
+                                <div class="comment-body">
+                                    <p class="comment-user">
+                                        {{ trim(($comentario->usuario?->name ?? 'Usuario').' '.($comentario->usuario?->apellidos ?? '')) }}
+                                    </p>
+                                    <p class="review-score" aria-label="Puntaje {{ (int) ($comentario->puntaje ?? 0) }} de 5">
+                                        {{ str_repeat('★', (int) ($comentario->puntaje ?? 0)) }}{{ str_repeat('☆', 5 - (int) ($comentario->puntaje ?? 0)) }}
+                                    </p>
+                                    <p class="comment-date">{{ optional($comentario->created_at)->format('Y-m-d H:i') }}</p>
+                                    <p class="comment-text">{{ $comentario->mensaje }}</p>
+                                </div>
+                            </article>
+                        @empty
+                            <p class="comments-empty">Aun no hay comentarios para esta propiedad.</p>
+                        @endforelse
+                    </div>
+                </section>
 
                 @auth
                     <div class="fav-row">
@@ -126,17 +231,103 @@
             </div>
         </article>
 
-        <aside class="map-panel">
-            <h2 class="map-title">Ubicacion en mapa</h2>
-            <p class="map-subtitle">Visualizacion con OpenStreetMap y marcador en la ubicacion registrada.</p>
-            <div id="mapa-detalle" data-lat="{{ $propiedad->latitud }}" data-lng="{{ $propiedad->longitud }}"></div>
-            <div class="coords">
-                <span class="coord">Lat: {{ $propiedad->latitud !== null ? number_format((float) $propiedad->latitud, 7, '.', '') : 'No registrada' }}</span>
-                <span class="coord">Lng: {{ $propiedad->longitud !== null ? number_format((float) $propiedad->longitud, 7, '.', '') : 'No registrada' }}</span>
-            </div>
-            @if ($propiedad->latitud === null || $propiedad->longitud === null)
-                <p class="warn">Esta propiedad no tiene coordenadas GPS registradas.</p>
-            @endif
+        <aside class="side-stack">
+            <section class="side-panel contact-panel">
+                <h2 class="side-title">Solicitar contacto</h2>
+                <div class="contact-person">
+                    <span class="contact-avatar">
+                        {{ strtoupper(substr($nombreAnunciante, 0, 1)) }}
+                    </span>
+                    <div>
+                        <p class="contact-name">{{ $nombreAnunciante }}</p>
+                        <p class="contact-note">El anunciante recibira tu solicitud y tus datos de contacto.</p>
+                    </div>
+                </div>
+
+                @if (session('contacto_success'))
+                    <p class="contact-alert success">{{ session('contacto_success') }}</p>
+                @endif
+                @if (session('contacto_info'))
+                    <p class="contact-alert info">{{ session('contacto_info') }}</p>
+                @endif
+
+                @if ($errors->contacto->any())
+                    <p class="contact-alert error">Revisa los datos de la solicitud.</p>
+                @endif
+
+                @auth
+                    <form class="contact-form" method="POST" action="{{ route('portal.propiedades.contacto', $propiedad) }}">
+                        @csrf
+                        <div class="contact-field">
+                            <label for="contacto_nombre">Nombre</label>
+                            <input
+                                id="contacto_nombre"
+                                name="nombre"
+                                type="text"
+                                value="{{ old('nombre', $nombreComprador) }}"
+                                placeholder="Tu nombre completo"
+                                required
+                            >
+                            @error('nombre', 'contacto') <span class="error-text">{{ $message }}</span> @enderror
+                        </div>
+
+                        <div class="contact-field">
+                            <label for="contacto_email">Correo</label>
+                            <input
+                                id="contacto_email"
+                                name="email"
+                                type="email"
+                                value="{{ old('email', auth()->user()?->email) }}"
+                                placeholder="tu@email.com"
+                                required
+                            >
+                            @error('email', 'contacto') <span class="error-text">{{ $message }}</span> @enderror
+                        </div>
+
+                        <div class="contact-field">
+                            <label for="contacto_telefono">Telefono</label>
+                            <input
+                                id="contacto_telefono"
+                                name="telefono"
+                                type="text"
+                                value="{{ old('telefono', $telefonoComprador) }}"
+                                placeholder="Numero para que te contacten"
+                            >
+                            @error('telefono', 'contacto') <span class="error-text">{{ $message }}</span> @enderror
+                        </div>
+
+                        <div class="contact-field">
+                            <label for="contacto_mensaje">Mensaje</label>
+                            <textarea
+                                id="contacto_mensaje"
+                                name="mensaje"
+                                placeholder="Hola, estoy interesado en esta propiedad. Me gustaria recibir mas informacion."
+                                required
+                            >{{ old('mensaje', 'Hola, estoy interesado en esta propiedad. Me gustaria recibir mas informacion.') }}</textarea>
+                            @error('mensaje', 'contacto') <span class="error-text">{{ $message }}</span> @enderror
+                        </div>
+
+                        <button class="contact-submit" type="submit">Enviar solicitud</button>
+                    </form>
+                @else
+                    <p class="comments-login">
+                        <a href="{{ route('login') }}">Inicia sesion</a> para enviar una solicitud de contacto.
+                    </p>
+                @endauth
+            </section>
+
+            <section class="side-panel map-panel">
+                <h2 class="side-title">Ubicacion en mapa</h2>
+                <p class="map-subtitle">Marcador segun la ubicacion registrada.</p>
+                <div id="mapa-detalle" data-lat="{{ $propiedad->latitud }}" data-lng="{{ $propiedad->longitud }}"></div>
+                <div class="coords">
+                    <span class="coord">Lat: {{ $propiedad->latitud !== null ? number_format((float) $propiedad->latitud, 7, '.', '') : 'No registrada' }}</span>
+                    <span class="coord">Lng: {{ $propiedad->longitud !== null ? number_format((float) $propiedad->longitud, 7, '.', '') : 'No registrada' }}</span>
+                </div>
+                @if ($propiedad->latitud === null || $propiedad->longitud === null)
+                    <p class="warn">Esta propiedad no tiene coordenadas GPS registradas.</p>
+                @endif
+            </section>
         </aside>
     </div>
 </div>
@@ -145,6 +336,65 @@
 @section('scripts')
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <script>
+    (() => {
+        const slides = Array.from(document.querySelectorAll('[data-gallery-slide]'));
+        if (slides.length <= 1) {
+            return;
+        }
+
+        const thumbs = Array.from(document.querySelectorAll('[data-gallery-thumb]'));
+        const prevButton = document.getElementById('gallery-prev');
+        const nextButton = document.getElementById('gallery-next');
+        const counter = document.getElementById('gallery-counter');
+        let currentIndex = 0;
+
+        const render = () => {
+            slides.forEach((slide, index) => {
+                const isActive = index === currentIndex;
+                slide.classList.toggle('active', isActive);
+                slide.setAttribute('aria-hidden', isActive ? 'false' : 'true');
+            });
+
+            thumbs.forEach((thumb, index) => {
+                const isActive = index === currentIndex;
+                thumb.classList.toggle('active', isActive);
+                thumb.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+            });
+
+            if (counter) {
+                counter.textContent = `${currentIndex + 1} / ${slides.length}`;
+            }
+        };
+
+        const goTo = (index) => {
+            if (index < 0) {
+                currentIndex = slides.length - 1;
+            } else if (index >= slides.length) {
+                currentIndex = 0;
+            } else {
+                currentIndex = index;
+            }
+
+            render();
+        };
+
+        prevButton?.addEventListener('click', () => goTo(currentIndex - 1));
+        nextButton?.addEventListener('click', () => goTo(currentIndex + 1));
+
+        thumbs.forEach((thumb) => {
+            thumb.addEventListener('click', () => {
+                const index = Number.parseInt(thumb.dataset.index || '0', 10);
+                if (Number.isNaN(index)) {
+                    return;
+                }
+
+                goTo(index);
+            });
+        });
+
+        render();
+    })();
+
     (() => {
         const mapElement = document.getElementById('mapa-detalle');
         if (!mapElement || typeof L === 'undefined') {
@@ -166,86 +416,6 @@
         if (hasCoords) {
             L.marker([lat, lng]).addTo(map);
         }
-    })();
-
-    (() => {
-        const gallery = document.querySelector('[data-gallery]');
-        if (!gallery) {
-            return;
-        }
-
-        const slides = Array.from(gallery.querySelectorAll('[data-slide]'));
-        const thumbs = Array.from(gallery.querySelectorAll('[data-gallery-thumb]'));
-        const prevButton = gallery.querySelector('[data-gallery-prev]');
-        const nextButton = gallery.querySelector('[data-gallery-next]');
-        const currentCounter = gallery.querySelector('[data-gallery-current]');
-
-        if (slides.length < 2) {
-            return;
-        }
-
-        let index = 0;
-        let autoTimer = null;
-
-        const paint = (nextIndex) => {
-            index = (nextIndex + slides.length) % slides.length;
-
-            slides.forEach((slide, slideIndex) => {
-                slide.classList.toggle('active', slideIndex === index);
-            });
-            thumbs.forEach((thumb, thumbIndex) => {
-                thumb.classList.toggle('active', thumbIndex === index);
-            });
-
-            if (currentCounter) {
-                currentCounter.textContent = String(index + 1);
-            }
-        };
-
-        const restartAutoplay = () => {
-            if (autoTimer !== null) {
-                clearInterval(autoTimer);
-            }
-            autoTimer = setInterval(() => {
-                paint(index + 1);
-            }, 5000);
-        };
-
-        if (prevButton) {
-            prevButton.addEventListener('click', () => {
-                paint(index - 1);
-                restartAutoplay();
-            });
-        }
-
-        if (nextButton) {
-            nextButton.addEventListener('click', () => {
-                paint(index + 1);
-                restartAutoplay();
-            });
-        }
-
-        thumbs.forEach((thumb) => {
-            thumb.addEventListener('click', () => {
-                const thumbIndex = Number.parseInt(thumb.dataset.index || '', 10);
-                if (!Number.isInteger(thumbIndex)) {
-                    return;
-                }
-                paint(thumbIndex);
-                restartAutoplay();
-            });
-        });
-
-        gallery.addEventListener('mouseenter', () => {
-            if (autoTimer !== null) {
-                clearInterval(autoTimer);
-                autoTimer = null;
-            }
-        });
-        gallery.addEventListener('mouseleave', restartAutoplay);
-
-        paint(0);
-        restartAutoplay();
     })();
 
     (() => {
@@ -309,4 +479,3 @@
     })();
 </script>
 @endsection
-

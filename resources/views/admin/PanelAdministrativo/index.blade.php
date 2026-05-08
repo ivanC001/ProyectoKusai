@@ -117,6 +117,26 @@
         color: #173f30;
         background: #f7fbf9;
     }
+    .field select,
+    .field textarea {
+        border: 1px solid #ccd8d1;
+        border-radius: 8px;
+        padding: 9px 10px;
+        font: inherit;
+        color: #173f30;
+        background: #f7fbf9;
+        width: 100%;
+    }
+    .field textarea {
+        resize: vertical;
+        min-height: 260px;
+    }
+    .field-help {
+        margin-top: 3px;
+        color: #628376;
+        font-size: .76rem;
+        line-height: 1.4;
+    }
     .error-text {
         color: #a32c2c;
         font-weight: 700;

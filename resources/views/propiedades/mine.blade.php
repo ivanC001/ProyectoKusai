@@ -1,4 +1,4 @@
-@extends('layouts.client')
+﻿@extends('layouts.client')
 
 @section('title', 'Mis publicaciones | Kusay.pe')
 
@@ -183,6 +183,12 @@
         font-size: 1.32rem;
         font-weight: 800;
     }
+    .price-usd {
+        margin: -6px 0 10px;
+        color: #2c7a57;
+        font-weight: 800;
+        font-size: .93rem;
+    }
     .chips {
         display: flex;
         gap: 6px;
@@ -208,23 +214,23 @@
 
     .card-actions {
         display: grid;
-        grid-template-columns: 1fr auto;
-        gap: 8px;
-        align-items: center;
+        gap: 9px;
+        align-items: stretch;
     }
     .card-actions form {
         margin: 0;
     }
     .state-form {
-        display: flex;
-        gap: 6px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 108px;
+        gap: 8px;
         align-items: center;
     }
     .state-form select {
-        flex: 1;
         border: 1px solid #ccd9d1;
         border-radius: 9px;
-        padding: 8px 9px;
+        height: 40px;
+        padding: 0 10px;
         background: #f7fbf9;
         color: #244b3b;
         font: inherit;
@@ -232,13 +238,18 @@
     .btn-save {
         border: none;
         border-radius: 9px;
-        background: #1a5b40;
+        background: linear-gradient(130deg, #1f6e4c, #144832);
         color: #fff;
         font: inherit;
         font-size: .82rem;
         font-weight: 800;
-        padding: 8px 10px;
+        height: 40px;
+        padding: 0 10px;
         cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
     }
     .btn-delete {
         border: 1px solid #edcbcb;
@@ -250,6 +261,100 @@
         font-weight: 800;
         padding: 8px 10px;
         cursor: pointer;
+    }
+    .card-toolbar {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-auto-rows: 40px;
+        align-items: stretch;
+        gap: 8px;
+    }
+    .card-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 6px;
+    }
+
+    .card-toolbar form {
+        margin: 0;
+    }
+
+    .btn-tool {
+        width: 120px;
+        height: 52px;
+
+        border: 1px solid #d5e1db;
+        border-radius: 12px;
+
+        background: #f8fbf9;
+        color: #1f553f;
+
+        font-size: .83rem;
+        font-weight: 800;
+
+        text-decoration: none;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+
+        transition: all .25s ease;
+
+        box-shadow: 0 3px 10px rgba(18, 57, 40, .06);
+
+        box-sizing: border-box;
+    }
+
+    .btn-tool:hover {
+        transform: translateY(-2px);
+        background: #edf6f1;
+        border-color: #b7ccbe;
+        box-shadow: 0 6px 16px rgba(18, 57, 40, .12);
+    }
+
+    .btn-tool i {
+        font-size: 1rem;
+    }
+
+    .btn-tool span {
+        white-space: nowrap;
+    }
+
+    .btn-tool-danger {
+        border-color: #f0c9c9;
+        background: #fff5f5;
+        color: #a23636;
+    }
+
+    .btn-tool-danger:hover {
+        background: #ffeaea;
+        border-color: #e6b3b3;
+    }
+    .btn-tool i {
+        font-size: .9rem;
+        line-height: 1;
+    }
+    .btn-tool span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .btn-tool:hover {
+        background: #edf6f1;
+        border-color: #b7ccbe;
+    }
+    .btn-tool-danger {
+        border-color: #edcbcb;
+        background: #fff4f4;
+        color: #9a3434;
+        font: inherit;
+        appearance: none;
+    }
+    .btn-tool-danger:hover {
+        background: #ffe8e8;
+        border-color: #e3b8b8;
     }
     .card-ops {
         display: inline-flex;
@@ -334,8 +439,11 @@
         .filters-actions {
             grid-column: span 1;
         }
-        .card-actions {
+        .state-form {
             grid-template-columns: 1fr;
+        }
+        .btn-save {
+            width: 100%;
         }
     }
 </style>
@@ -348,7 +456,10 @@
                 <h1 class="mine-title">Mis publicaciones</h1>
                 <p class="mine-subtitle">Gestiona tus propiedades, cambia estado y elimina avisos cuando lo necesites.</p>
             </div>
-            <a href="{{ route('propiedades.create') }}" class="btn-main">+ Publicar nueva propiedad</a>
+            <div class="card-ops">
+                <a href="{{ route('propiedades.solicitudes') }}" class="btn-clear">Solicitudes recibidas</a>
+                <a href="{{ route('propiedades.create') }}" class="btn-main">+ Publicar nueva propiedad</a>
+            </div>
         </header>
 
         @if (session('success'))
@@ -449,6 +560,9 @@
                                 {{ $propiedad->ubicacion?->departamento ?? 'Sin departamento' }}
                             </p>
                             <p class="price">S/ {{ number_format((float) $propiedad->precio, 2, '.', ',') }}</p>
+                            @if ($propiedad->precio_usd !== null)
+                                <p class="price-usd">US$ {{ number_format((float) $propiedad->precio_usd, 2, '.', ',') }}</p>
+                            @endif
 
                             <div class="chips">
                                 <span class="chip chip-state {{ $estadoClase }}">{{ ucfirst($propiedad->estado) }}</span>
@@ -456,6 +570,7 @@
                                 <span class="chip">{{ $propiedad->tipoPropiedad?->nombre ?? 'Sin tipo' }}</span>
                                 <span class="chip">{{ $propiedad->imagenes_count }} foto(s)</span>
                                 <span class="chip">{{ $propiedad->contactos_count }} contacto(s)</span>
+                                <span class="chip">{{ $propiedad->comentarios_count }} comentario(s)</span>
                                 <span class="chip">{{ $propiedad->visitas_count }} clic(s)</span>
                                 <span class="chip">{{ $propiedad->favoritos_count }} favorito(s)</span>
                             </div>
@@ -464,21 +579,37 @@
                                 <form class="state-form" method="POST" action="{{ route('propiedades.estado.update', $propiedad) }}">
                                     @csrf
                                     @method('PATCH')
-                                    <select name="estado" aria-label="Estado de la propiedad {{ $propiedad->id }}">
+                                    <select name="estado" aria-label="Estado de {{ $propiedad->titulo }}">
                                         <option value="disponible" @selected($propiedad->estado === 'disponible')>Disponible</option>
                                         <option value="reservado" @selected($propiedad->estado === 'reservado')>Reservado</option>
                                         <option value="vendido" @selected($propiedad->estado === 'vendido')>Vendido</option>
                                     </select>
-                                    <button class="btn-save" type="submit">Guardar</button>
+                                    <button class="btn-save" type="submit">
+                                        <i class="bi bi-check2-circle" aria-hidden="true"></i>
+                                        <span>Guardar</span>
+                                    </button>
                                 </form>
 
-                                <div class="card-ops">
-                                    <a class="btn-edit" href="{{ route('propiedades.detalle', $propiedad) }}">Detalle</a>
-                                    <a class="btn-edit" href="{{ route('propiedades.edit', $propiedad) }}">Editar</a>
+                                <div class="card-toolbar">
+                                    <a class="btn-tool" href="{{ route('propiedades.detalle', $propiedad) }}">
+                                        <i class="bi bi-eye" aria-hidden="true"></i>
+                                        <span>Detalle</span>
+                                    </a>
+                                    <a class="btn-tool" href="{{ route('propiedades.solicitudes', ['propiedad_id' => $propiedad->id]) }}">
+                                        <i class="bi bi-chat-left-text" aria-hidden="true"></i>
+                                        <span>Solicitudes</span>
+                                    </a>
+                                    <a class="btn-tool" href="{{ route('propiedades.edit', $propiedad) }}">
+                                        <i class="bi bi-pencil-square" aria-hidden="true"></i>
+                                        <span>Editar</span>
+                                    </a>
                                     <form method="POST" action="{{ route('propiedades.destroy', $propiedad) }}" onsubmit="return confirm('Esta accion eliminara la publicacion. Deseas continuar?');">
                                         @csrf
                                         @method('DELETE')
-                                        <button class="btn-delete" type="submit">Eliminar</button>
+                                        <button class="btn-tool btn-tool-danger" type="submit">
+                                            <i class="bi bi-trash3" aria-hidden="true"></i>
+                                            <span>Eliminar</span>
+                                        </button>
                                     </form>
                                 </div>
                             </div>

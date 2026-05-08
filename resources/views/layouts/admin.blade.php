@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'Admin | Kusay.pe')</title>
+    <link rel="icon" type="image/png" href="{{ asset('assets/image/png kusay.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('assets/image/png kusay.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -17,6 +19,7 @@
             <nav class="admin-nav">
                 <a href="{{ route('admin.dashboard') }}" class="admin-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">Panel</a>
                 <a href="{{ route('admin.PanelAdministrativo') }}" class="admin-link {{ request()->routeIs('admin.PanelAdministrativo') || request()->routeIs('admin.PanelAdministrativo.tipos.*') ? 'active' : '' }}">Administrar tipo de terrenos</a>
+                <a href="{{ route('admin.PanelAdministrativo.soporte') }}" class="admin-link {{ request()->routeIs('admin.PanelAdministrativo.soporte') || request()->routeIs('admin.PanelAdministrativo.soporte.update') ? 'active' : '' }}">Administrar terminos</a>
                 <a href="{{ route('admin.PanelAdministrativo.usuarios.index') }}" class="admin-link {{ request()->routeIs('admin.PanelAdministrativo.usuarios.*') ? 'active' : '' }}">Administrar usuarios</a>
                 <a href="/" class="admin-link">Volver al sitio</a>
             </nav>
@@ -41,4 +44,3 @@
     @yield('scripts')
 </body>
 </html>
-

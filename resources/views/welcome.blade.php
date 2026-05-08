@@ -3,41 +3,7 @@
 @section('title', 'Kusay.pe | Portal inmobiliario')
 
 @section('content')
-<section class="quick-nav">
-        <div class="quick-categories">
-            <button class="cat-btn active" type="button"><span class="cat-ic">🏠</span>Todos</button>
-            <button class="cat-btn" type="button"><span class="cat-ic">🌱</span>Terrenos</button>
-            <button class="cat-btn" type="button"><span class="cat-ic">🏡</span>Casas</button>
-            <button class="cat-btn" type="button"><span class="cat-ic">🏢</span>Departamentos</button>
-            <button class="cat-btn" type="button"><span class="cat-ic">📐</span>Lotes</button>
-            <button class="cat-btn" type="button"><span class="cat-ic">🏪</span>Locales</button>
-            <button class="cat-btn" type="button"><span class="cat-ic">🌾</span>Chacras</button>
-            <button class="cat-btn" type="button"><span class="cat-ic">💼</span>Oficinas</button>
-        </div>
-        <div class="quick-filters">
-            <div class="chip-row">
-                <button class="chip active" type="button">Todo el Peru</button>
-                <button class="chip" type="button">Pucallpa</button>
-                <button class="chip" type="button">Tarapoto</button>
-                <button class="chip" type="button">Iquitos</button>
-                <button class="chip" type="button">Huanuco</button>
-                <button class="chip" type="button">Huancayo</button>
-                <button class="chip" type="button">Tingo Maria</button>
-                <button class="chip" type="button">Lima</button>
-            </div>
-            <div class="quick-right">
-                <select class="ord-select" aria-label="Ordenar">
-                    <option>Ordenar</option>
-                    <option>Mas recientes</option>
-                    <option>Menor precio</option>
-                    <option>Mayor precio</option>
-                </select>
-                <span class="count">14 propiedades</span>
-                <button class="view-btn active" type="button">#</button>
-                <button class="view-btn" type="button">=</button>
-            </div>
-        </div>
-    </section>
+
 
     <main>
         <section class="hero" id="inicio">

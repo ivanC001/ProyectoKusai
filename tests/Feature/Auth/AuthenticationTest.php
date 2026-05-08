@@ -19,7 +19,9 @@ class AuthenticationTest extends TestCase
 
     public function test_users_can_authenticate_using_the_login_screen(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create([
+            'dni' => '70112233',
+        ]);
 
         $response = $this->post('/login', [
             'email' => $user->email,
@@ -28,6 +30,39 @@ class AuthenticationTest extends TestCase
 
         $this->assertAuthenticated();
         $response->assertRedirect('/');
+    }
+
+    public function test_users_without_dni_are_redirected_to_profile_on_login(): void
+    {
+        $user = User::factory()->create([
+            'dni' => null,
+            'tipo_persona' => 'natural',
+        ]);
+
+        $response = $this->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+        $this->assertAuthenticated();
+        $response->assertRedirect(route('profile.edit'));
+        $response->assertSessionHas('profile_dni_required');
+    }
+
+    public function test_unverified_users_are_redirected_to_verify_email_on_login(): void
+    {
+        $user = User::factory()->unverified()->create([
+            'dni' => '70112233',
+            'tipo_persona' => 'natural',
+        ]);
+
+        $response = $this->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+        $this->assertAuthenticated();
+        $response->assertRedirect(route('verification.notice'));
     }
 
     public function test_users_can_not_authenticate_with_invalid_password(): void

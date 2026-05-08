@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ImagenPropiedad;
+use App\Models\Contacto;
 use App\Models\Propiedad;
 use App\Models\TipoPropiedad;
 use App\Models\Ubicacion;
@@ -42,7 +43,7 @@ class PropiedadController extends Controller
                 'ubicacion:id,departamento,provincia,distrito',
                 'portadaImagen',
             ])
-            ->withCount(['imagenes', 'contactos', 'favoritos', 'visitas']);
+            ->withCount(['imagenes', 'contactos', 'favoritos', 'visitas', 'comentarios']);
 
         if (in_array($estado, $estadosValidos, true)) {
             $query->where('estado', $estado);
@@ -80,6 +81,71 @@ class PropiedadController extends Controller
                 'estado' => $estado,
                 'tipo' => $tipoOperacion,
                 'orden' => $orden,
+            ],
+        ]);
+    }
+
+    public function solicitudes(Request $request): View
+    {
+        $propiedadesUsuario = Propiedad::query()
+            ->where('user_id', $request->user()->id)
+            ->orderBy('titulo')
+            ->get(['id', 'titulo']);
+
+        $propiedadId = $request->integer('propiedad_id') > 0
+            ? $request->integer('propiedad_id')
+            : null;
+
+        if ($propiedadId !== null && ! $propiedadesUsuario->contains('id', $propiedadId)) {
+            $propiedadId = null;
+        }
+
+        $request->user()->forceFill([
+            'solicitudes_vistas_at' => now(),
+        ])->save();
+
+        $query = Contacto::query()
+            ->whereHas('propiedad', function ($propiedadQuery) use ($request): void {
+                $propiedadQuery->where('user_id', $request->user()->id);
+            })
+            ->with([
+                'propiedad:id,titulo,precio,tipo,estado,user_id,ubicacion_id',
+                'propiedad.ubicacion:id,departamento,provincia,distrito',
+                'usuario:id,name,apellidos,email',
+            ]);
+
+        if ($propiedadId !== null) {
+            $query->where('propiedad_id', $propiedadId);
+        }
+
+        $query->latest();
+
+        $solicitudes = $query->paginate(12)->withQueryString();
+
+        $estadisticas = [
+            'total' => Contacto::query()
+                ->whereHas('propiedad', function ($propiedadQuery) use ($request): void {
+                    $propiedadQuery->where('user_id', $request->user()->id);
+                })
+                ->count(),
+            'propiedades_con_solicitudes' => Propiedad::query()
+                ->where('user_id', $request->user()->id)
+                ->has('contactos')
+                ->count(),
+            'ultimos_7_dias' => Contacto::query()
+                ->whereHas('propiedad', function ($propiedadQuery) use ($request): void {
+                    $propiedadQuery->where('user_id', $request->user()->id);
+                })
+                ->where('created_at', '>=', now()->subDays(7))
+                ->count(),
+        ];
+
+        return view('propiedades.solicitudes', [
+            'solicitudes' => $solicitudes,
+            'propiedadesUsuario' => $propiedadesUsuario,
+            'estadisticas' => $estadisticas,
+            'filtros' => [
+                'propiedad_id' => $propiedadId,
             ],
         ]);
     }
@@ -185,9 +251,11 @@ class PropiedadController extends Controller
             'titulo' => ['required', 'string', 'max:255'],
             'descripcion' => ['required', 'string', 'min:20'],
             'precio' => ['required', 'numeric', 'min:0'],
+            'precio_usd' => ['nullable', 'numeric', 'min:0'],
             'tipo' => ['required', 'in:venta,alquiler'],
             'estado' => ['required', 'in:disponible,vendido,reservado'],
             'direccion' => ['required', 'string', 'max:255'],
+            'referencia' => ['nullable', 'string', 'max:255'],
             'latitud' => ['required', 'numeric', 'between:-90,90'],
             'longitud' => ['required', 'numeric', 'between:-180,180'],
             'habitaciones' => ['nullable', 'integer', 'min:0'],
@@ -198,6 +266,13 @@ class PropiedadController extends Controller
             'provincia' => ['required', 'string', 'max:120'],
             'distrito' => ['required', 'string', 'max:120'],
         ], $this->datosMessages(), $this->datosAttributes());
+
+        $tipoPropiedadSeleccionado = TipoPropiedad::query()->find((int) $validated['tipo_propiedad_id']);
+        if ($this->isTipoProyecto($tipoPropiedadSeleccionado) && $validated['tipo'] !== 'venta') {
+            return back()
+                ->withErrors(['tipo' => 'Los proyectos inmobiliarios se publican como venta. Selecciona operacion "Venta".'])
+                ->withInput();
+        }
 
         $ubicacionPeru = $this->resolveUbicacionPeru($validated);
         if ($ubicacionPeru === null) {
@@ -219,9 +294,11 @@ class PropiedadController extends Controller
                 'titulo' => $validated['titulo'],
                 'descripcion' => $validated['descripcion'],
                 'precio' => $validated['precio'],
+                'precio_usd' => $validated['precio_usd'] ?? null,
                 'tipo' => $validated['tipo'],
                 'estado' => $validated['estado'],
                 'direccion' => $validated['direccion'],
+                'referencia' => $validated['referencia'] ?? null,
                 'latitud' => $validated['latitud'],
                 'longitud' => $validated['longitud'],
                 'habitaciones' => $validated['habitaciones'] ?? null,
@@ -294,9 +371,11 @@ class PropiedadController extends Controller
             'titulo' => ['required', 'string', 'max:255'],
             'descripcion' => ['required', 'string', 'min:20'],
             'precio' => ['required', 'numeric', 'min:0'],
+            'precio_usd' => ['nullable', 'numeric', 'min:0'],
             'tipo' => ['required', 'in:venta,alquiler'],
             'estado' => ['required', 'in:disponible,vendido,reservado'],
             'direccion' => ['required', 'string', 'max:255'],
+            'referencia' => ['nullable', 'string', 'max:255'],
             'latitud' => ['nullable', 'numeric', 'between:-90,90'],
             'longitud' => ['nullable', 'numeric', 'between:-180,180'],
             'habitaciones' => ['nullable', 'integer', 'min:0'],
@@ -311,6 +390,13 @@ class PropiedadController extends Controller
             'nuevas_fotos' => ['nullable', 'array'],
             'nuevas_fotos.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ], $this->datosMessages(), $this->datosAttributes());
+
+        $tipoPropiedadSeleccionado = TipoPropiedad::query()->find((int) $validated['tipo_propiedad_id']);
+        if ($this->isTipoProyecto($tipoPropiedadSeleccionado) && $validated['tipo'] !== 'venta') {
+            return back()
+                ->withErrors(['tipo' => 'Los proyectos inmobiliarios se publican como venta. Selecciona operacion "Venta".'])
+                ->withInput();
+        }
 
         $ubicacionPeru = $this->resolveUbicacionPeru($validated);
         if ($ubicacionPeru === null) {
@@ -369,9 +455,11 @@ class PropiedadController extends Controller
                 'titulo' => $validated['titulo'],
                 'descripcion' => $validated['descripcion'],
                 'precio' => $validated['precio'],
+                'precio_usd' => $validated['precio_usd'] ?? null,
                 'tipo' => $validated['tipo'],
                 'estado' => $validated['estado'],
                 'direccion' => $validated['direccion'],
+                'referencia' => $validated['referencia'] ?? null,
                 'latitud' => $validated['latitud'] ?? null,
                 'longitud' => $validated['longitud'] ?? null,
                 'habitaciones' => $validated['habitaciones'] ?? null,
@@ -445,7 +533,7 @@ class PropiedadController extends Controller
             'imagenes:id,propiedad_id,ruta_imagen',
             'portadaImagen',
         ]);
-        $propiedad->loadCount(['imagenes', 'contactos', 'favoritos', 'visitas']);
+        $propiedad->loadCount(['imagenes', 'contactos', 'favoritos', 'visitas', 'comentarios']);
 
         return view('propiedades.detalle', [
             'propiedad' => $propiedad,
@@ -551,9 +639,11 @@ class PropiedadController extends Controller
             'titulo' => 'titulo',
             'descripcion' => 'descripcion',
             'precio' => 'precio',
+            'precio_usd' => 'precio en dolares',
             'tipo' => 'tipo de operacion',
             'estado' => 'estado',
             'direccion' => 'direccion',
+            'referencia' => 'referencia',
             'latitud' => 'latitud',
             'longitud' => 'longitud',
             'habitaciones' => 'habitaciones',
@@ -635,5 +725,14 @@ class PropiedadController extends Controller
         }
 
         return $erroresUbicacion;
+    }
+
+    private function isTipoProyecto(?TipoPropiedad $tipoPropiedad): bool
+    {
+        if ($tipoPropiedad === null) {
+            return false;
+        }
+
+        return str_contains(Str::lower($tipoPropiedad->nombre), 'proyecto');
     }
 }

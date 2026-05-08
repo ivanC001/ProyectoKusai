@@ -1,123 +1,39 @@
 @extends('layouts.client')
 
-@section('title', 'Kusay.pe | Portal inmobiliario')
+@section('title', !empty($filtros['solo_favoritos']) ? 'Propiedades favoritas | Kusay.pe' : 'Kusay.pe | Portal inmobiliario')
 
 @section('content')
+    <!-- Estilos de esta vista: resources/css/pages/portal-index.css -->
 @php
-        $tipoProyecto = $tiposPropiedad->first(function ($tipo) {
+        $tiposProyecto = $tiposPropiedad->filter(function ($tipo) {
             return str_contains(mb_strtolower($tipo->nombre), 'proyecto');
         });
+        $tipoProyecto = $tiposProyecto->first();
 
-        $resolveTipoIcono = static function (string $nombre): string {
-            $normalizado = Illuminate\Support\Str::ascii(mb_strtolower(trim($nombre)));
-
-            return match (true) {
-                str_contains($normalizado, 'terreno') => '&#127793;',
-                str_contains($normalizado, 'chacra') => '&#127806;',
-                str_contains($normalizado, 'casa') => '&#127968;',
-                str_contains($normalizado, 'departamento') => '&#127970;',
-                str_contains($normalizado, 'local') => '&#127980;',
-                str_contains($normalizado, 'lote') => '&#128207;',
-                str_contains($normalizado, 'oficina') => '&#128188;',
-                str_contains($normalizado, 'proyecto') => '&#127959;&#65039;',
-                default => '&#127968;',
+        $queryBase = request()->except(['page', 'modo', 'operacion']);
+        $soloFavoritos = !empty($filtros['solo_favoritos']);
+        $modoFiltro = $filtros['modo'] ?? '';
+        $modoActivo = $modoFiltro !== '' ? $modoFiltro : ($soloFavoritos ? '' : 'comprar');
+        $tituloListado = $soloFavoritos
+            ? 'Propiedades favoritas'
+            : match ($modoActivo) {
+                'alquilar' => 'Propiedades en alquiler',
+                'proyectos' => 'Proyectos inmobiliarios',
+                'comprar' => 'Propiedades en venta',
+                default => 'Todas las propiedades',
             };
-        };
-
-        $whatsappUrl = 'https://www.whatsapp.com/';
-        $queryBase = request()->except(['page']);
+        $subtituloListado = $soloFavoritos
+            ? 'Lista de propiedades que guardaste para revisar luego.'
+            : match ($modoActivo) {
+                'alquilar' => 'Resultados filtrados para alquiler segun tus criterios.',
+                'proyectos' => 'Proyectos activos disponibles segun ubicacion y filtros.',
+                'comprar' => 'Resultados filtrados para compra segun ubicacion y presupuesto.',
+                default => 'Catalogo principal organizado por tipo, ubicacion y filtros reales.',
+            };
+        $tiposBusqueda = $modoFiltro === 'proyectos' ? $tiposProyecto : $tiposPropiedad;
     @endphp
 
-<section class="quick-nav">
-        <details class="quick-block quick-block-cats" data-quick-block data-quick-block-cats open>
-            <summary class="quick-block-summary" aria-label="Ver categorias">
-                <span class="quick-block-title">Categorias</span>
-                <span class="quick-block-caret">&#9662;</span>
-            </summary>
-            <div class="quick-block-body">
-        <div class="quick-categories-wrap" data-cat-wrap>
-            <div class="quick-categories" data-cat-list id="quick-categories-list">
-                <a
-                    href="{{ route('home', array_merge($queryBase, ['tipo_propiedad_id' => null])) }}#props"
-                    class="cat-btn {{ $filtros['tipo_propiedad_id'] === null ? 'active' : '' }}"
-                >
-                    <span class="cat-icon">&#127968;</span>Todos
-                </a>
-                @foreach ($tiposPropiedad as $tipo)
-                    @php
-                        $iconoTipo = $resolveTipoIcono($tipo->nombre);
-                    @endphp
-                    <a
-                        href="{{ route('home', array_merge($queryBase, ['tipo_propiedad_id' => $tipo->id])) }}#props"
-                        class="cat-btn {{ (string) $filtros['tipo_propiedad_id'] === (string) $tipo->id ? 'active' : '' }}"
-                    >
-                        <span class="cat-icon">{!! $iconoTipo !!}</span>{{ $tipo->nombre }}
-                    </a>
-                @endforeach
-            </div>
-            <div class="cat-toggle-row">
-                <button
-                    type="button"
-                    class="cat-toggle-btn"
-                    data-cat-toggle
-                    aria-expanded="false"
-                    aria-controls="quick-categories-list"
-                >
-                    Ver mas categorias
-                </button>
-            </div>
-        </div>
-            </div>
-        </details>
-
-        <details class="quick-block quick-block-filters" data-quick-block data-quick-block-filters open>
-            <summary class="quick-block-summary" aria-label="Ver filtros">
-                <span class="quick-block-title">Ubicacion y orden</span>
-                <span class="quick-block-caret">&#9662;</span>
-            </summary>
-            <div class="quick-block-body">
-        <div class="quick-filters">
-            <div class="chip-row">
-                <a
-                    class="chip {{ $filtros['ciudad'] === '' ? 'active' : '' }}"
-                    href="{{ route('home', array_merge($queryBase, ['ciudad' => null])) }}#props"
-                >
-                    Todo el Peru
-                </a>
-                @foreach ($ciudadesTop as $ciudad)
-                    <a
-                        class="chip {{ $filtros['ciudad'] === $ciudad->distrito ? 'active' : '' }}"
-                        href="{{ route('home', array_merge($queryBase, ['ciudad' => $ciudad->distrito])) }}#props"
-                    >
-                        {{ ucwords(mb_strtolower($ciudad->distrito)) }}
-                    </a>
-                @endforeach
-            </div>
-
-            <div class="quick-right">
-                <form class="ord-form" method="GET" action="{{ route('home') }}#props">
-                    @foreach (request()->except(['orden', 'page']) as $key => $value)
-                        @if (is_array($value))
-                            @foreach ($value as $item)
-                                <input type="hidden" name="{{ $key }}[]" value="{{ $item }}">
-                            @endforeach
-                        @else
-                            <input type="hidden" name="{{ $key }}" value="{{ $value }}">
-                        @endif
-                    @endforeach
-                    <select class="ord-select" name="orden" onchange="this.form.submit()" aria-label="Ordenar propiedades">
-                        <option value="recientes" @selected($filtros['orden'] === 'recientes')>Mas recientes</option>
-                        <option value="precio_asc" @selected($filtros['orden'] === 'precio_asc')>Menor precio</option>
-                        <option value="precio_desc" @selected($filtros['orden'] === 'precio_desc')>Mayor precio</option>
-                    </select>
-                </form>
-                <span class="count">{{ $totalResultados }} propiedades</span>
-            </div>
-        </div>
-            </div>
-        </details>
-    </section>
-
+    <!-- Hero principal -->
     <section class="hero" id="inicio">
             <div class="hero-inner">
                 <div class="hero-tag">Portal inmobiliario N1 - Selva y Sierra peruana</div>
@@ -127,27 +43,27 @@
                 <div class="search-box">
                     <div class="search-tabs">
                         <a
-                            href="{{ route('home', array_merge($queryBase, ['operacion' => 'venta'])) }}#props"
-                            class="{{ $filtros['operacion'] === 'venta' ? 'active' : '' }}"
+                            href="{{ route('home', array_merge($queryBase, ['modo' => 'comprar', 'tipo_propiedad_id' => null])) }}#props"
+                            class="{{ $modoActivo === 'comprar' ? 'active' : '' }}"
                         >
                             Comprar
                         </a>
                         <a
-                            href="{{ route('home', array_merge($queryBase, ['operacion' => 'alquiler'])) }}#props"
-                            class="{{ $filtros['operacion'] === 'alquiler' ? 'active' : '' }}"
+                            href="{{ route('home', array_merge($queryBase, ['modo' => 'alquilar', 'tipo_propiedad_id' => null])) }}#props"
+                            class="{{ $modoActivo === 'alquilar' ? 'active' : '' }}"
                         >
                             Alquilar
                         </a>
                         <a
-                            href="{{ route('home', array_merge($queryBase, ['operacion' => null, 'tipo_propiedad_id' => $tipoProyecto?->id])) }}#props"
-                            class="{{ $tipoProyecto && (string) $filtros['tipo_propiedad_id'] === (string) $tipoProyecto->id ? 'active' : '' }}"
+                            href="{{ route('home', array_merge($queryBase, ['modo' => 'proyectos', 'tipo_propiedad_id' => null])) }}#props"
+                            class="{{ $modoActivo === 'proyectos' ? 'active' : '' }}"
                         >
                             Proyectos
                         </a>
                     </div>
                     <div class="search-body">
                         <form class="search-form" method="GET" action="{{ route('home') }}#props">
-                            <input type="hidden" name="operacion" value="{{ $filtros['operacion'] }}">
+                            <input type="hidden" name="modo" value="{{ $modoFiltro }}">
                             <input type="hidden" name="ciudad" value="{{ $filtros['ciudad'] }}">
                             <input type="hidden" name="orden" value="{{ $filtros['orden'] }}">
                             @if (!empty($filtros['solo_favoritos']))
@@ -162,8 +78,8 @@
                                     placeholder="Ciudad, zona o referencia..."
                                 >
                                 <select name="tipo_propiedad_id">
-                                    <option value="">Todo tipo</option>
-                                    @foreach ($tiposPropiedad as $tipo)
+                                    <option value="">{{ $modoFiltro === 'proyectos' ? 'Todo proyecto' : 'Todo tipo' }}</option>
+                                    @foreach ($tiposBusqueda as $tipo)
                                         <option value="{{ $tipo->id }}" @selected((string) $filtros['tipo_propiedad_id'] === (string) $tipo->id)>
                                             {{ $tipo->nombre }}
                                         </option>
@@ -189,6 +105,7 @@
             </div>
         </section>
 
+        @if (! $soloFavoritos && $destacadas->isNotEmpty())
         <section class="vip-sec sec" id="destacadas">
             <div class="shead">
                 <div>
@@ -213,8 +130,12 @@
                                 {{ $propiedad->ubicacion?->departamento ?? 'Sin departamento' }}
                             </p>
                             <p class="card-price">S/ {{ number_format((float) $propiedad->precio, 2, '.', ',') }}</p>
+                            @if ($propiedad->precio_usd !== null)
+                                <p class="card-price-usd">US$ {{ number_format((float) $propiedad->precio_usd, 2, '.', ',') }}</p>
+                            @endif
                             <div class="meta-row">
                                 <span class="meta-chip">{{ $propiedad->visitas_count }} clic(s)</span>
+                                <span class="meta-chip">{{ $propiedad->comentarios_count }} comentario(s)</span>
                                 <span class="meta-chip" data-favoritos-id="{{ $propiedad->id }}">{{ $propiedad->favoritos_count }} favorito(s)</span>
                             </div>
                             <div class="card-actions">
@@ -224,18 +145,21 @@
                                         class="card-favorite-btn {{ $favoritasIds->contains($propiedad->id) ? 'active' : '' }}"
                                         data-favorito-url="{{ route('portal.propiedades.favoritos.toggle', $propiedad) }}"
                                         data-favorita="{{ $favoritasIds->contains($propiedad->id) ? '1' : '0' }}"
-                                        data-favoritos-id="{{ $propiedad->id }}"
+                                        data-propiedad-id="{{ $propiedad->id }}"
                                         aria-label="{{ $favoritasIds->contains($propiedad->id) ? 'Quitar de favoritos' : 'Agregar a favoritos' }}"
                                         aria-pressed="{{ $favoritasIds->contains($propiedad->id) ? 'true' : 'false' }}"
                                         title="{{ $favoritasIds->contains($propiedad->id) ? 'Quitar de favoritos' : 'Agregar a favoritos' }}"
                                     >
-                                        {!! $favoritasIds->contains($propiedad->id) ? '&#9829;' : '&#9825;' !!}
+                                        <i class="card-favorite-glyph bi {{ $favoritasIds->contains($propiedad->id) ? 'bi-heart-fill' : 'bi-heart' }}" aria-hidden="true"></i>
                                     </button>
                                 @else
-                                    <a href="{{ route('login') }}" class="card-favorite-btn" title="Inicia sesion para guardar favoritos">&#9825;</a>
+                                    <a href="{{ route('login') }}" class="card-favorite-btn" title="Inicia sesion para guardar favoritos">
+                                        <i class="card-favorite-glyph bi bi-heart" aria-hidden="true"></i>
+                                    </a>
                                 @endauth
                                 <a class="card-link" href="{{ route('portal.propiedades.show', $propiedad) }}">
-                                    Ver detalle
+                                    <i class="bi bi-arrow-up-right-circle" aria-hidden="true"></i>
+                                    <span>Ver detalle</span>
                                 </a>
                             </div>
                         </div>
@@ -245,13 +169,14 @@
                 @endforelse
             </div>
         </section>
+        @endif
 
         <section class="sec" id="props">
             <div class="shead">
                 <div>
                     <p class="eyebrow">Disponibles ahora</p>
-                    <h2 class="stitle">Todas las propiedades</h2>
-                    <p class="ssub">Catalogo principal organizado por tipo, ubicacion y filtros reales.</p>
+                    <h2 class="stitle">{{ $tituloListado }}</h2>
+                    <p class="ssub">{{ $subtituloListado }}</p>
                 </div>
                 <div>
                     <a href="{{ route('propiedades.create') }}" class="btn btn-main">+ Publicar gratis</a>
@@ -260,7 +185,14 @@
             </div>
 
             @if ($propiedades->isEmpty())
-                <div class="empty-list">No encontramos propiedades con esos filtros. Prueba con otros criterios.</div>
+                @if ($soloFavoritos)
+                    <div class="empty-list">
+                        Aun no marcaste propiedades favoritas.
+                        <a href="{{ route('home') }}#props">Ver todas las propiedades</a>.
+                    </div>
+                @else
+                    <div class="empty-list">No encontramos propiedades con esos filtros. Prueba con otros criterios.</div>
+                @endif
             @else
                 <div class="prop-grid">
                     @foreach ($propiedades as $propiedad)
@@ -278,11 +210,15 @@
                                     {{ $propiedad->ubicacion?->departamento ?? 'Sin departamento' }}
                                 </p>
                                 <p class="card-price">S/ {{ number_format((float) $propiedad->precio, 2, '.', ',') }}</p>
+                                @if ($propiedad->precio_usd !== null)
+                                    <p class="card-price-usd">US$ {{ number_format((float) $propiedad->precio_usd, 2, '.', ',') }}</p>
+                                @endif
                                 <div class="meta-row">
                                     <span class="meta-chip">{{ ucfirst($propiedad->tipo) }}</span>
                                     <span class="meta-chip">{{ $propiedad->imagenes_count }} foto(s)</span>
                                     <span class="meta-chip">{{ $propiedad->contactos_count }} contacto(s)</span>
                                     <span class="meta-chip">{{ $propiedad->visitas_count }} clic(s)</span>
+                                    <span class="meta-chip">{{ $propiedad->comentarios_count }} comentario(s)</span>
                                     <span class="meta-chip" data-favoritos-id="{{ $propiedad->id }}">{{ $propiedad->favoritos_count }} favorito(s)</span>
                                 </div>
                                 <div class="card-actions">
@@ -292,19 +228,22 @@
                                             class="card-favorite-btn {{ $favoritasIds->contains($propiedad->id) ? 'active' : '' }}"
                                             data-favorito-url="{{ route('portal.propiedades.favoritos.toggle', $propiedad) }}"
                                             data-favorita="{{ $favoritasIds->contains($propiedad->id) ? '1' : '0' }}"
-                                            data-favoritos-id="{{ $propiedad->id }}"
+                                            data-propiedad-id="{{ $propiedad->id }}"
                                             aria-label="{{ $favoritasIds->contains($propiedad->id) ? 'Quitar de favoritos' : 'Agregar a favoritos' }}"
                                             aria-pressed="{{ $favoritasIds->contains($propiedad->id) ? 'true' : 'false' }}"
                                             title="{{ $favoritasIds->contains($propiedad->id) ? 'Quitar de favoritos' : 'Agregar a favoritos' }}"
                                         >
-                                            {!! $favoritasIds->contains($propiedad->id) ? '&#9829;' : '&#9825;' !!}
+                                            <i class="card-favorite-glyph bi {{ $favoritasIds->contains($propiedad->id) ? 'bi-heart-fill' : 'bi-heart' }}" aria-hidden="true"></i>
                                         </button>
                                     @else
-                                        <a href="{{ route('login') }}" class="card-favorite-btn" title="Inicia sesion para guardar favoritos">&#9825;</a>
+                                        <a href="{{ route('login') }}" class="card-favorite-btn" title="Inicia sesion para guardar favoritos">
+                                            <i class="card-favorite-glyph bi bi-heart" aria-hidden="true"></i>
+                                        </a>
                                     @endauth
                                     <a class="card-link" href="{{ route('portal.propiedades.show', $propiedad) }}">
-                                        Ver detalle
-                                    </a>
+                                    <i class="bi bi-arrow-up-right-circle" aria-hidden="true"></i>
+                                    <span>Ver detalle</span>
+                                </a>
                                 </div>
                             </div>
                         </article>
@@ -337,154 +276,149 @@
             @endif
         </section>
 
-        <section class="ciu-sec sec" id="ciudades">
-            <div class="shead">
-                <div>
-                    <p class="eyebrow">Destinos</p>
-                    <h2 class="stitle">Ciudades con mas oportunidades</h2>
-                    <p class="ssub">Mercados inmobiliarios activos en selva y sierra.</p>
-                </div>
-            </div>
-            <div class="ciu-grid">
-                @forelse ($ciudadesTop->take(8) as $ciudad)
-                    <article class="city-card">
-                        <h3>{{ ucwords(mb_strtolower($ciudad->distrito)) }}</h3>
-                        <p>{{ $ciudad->propiedades_count }} propiedades en {{ ucwords(mb_strtolower($ciudad->departamento)) }}</p>
-                    </article>
-                @empty
-                    <article class="city-card">
-                        <h3>Sin datos</h3>
-                        <p>Aun no hay propiedades disponibles para mostrar ciudades.</p>
-                    </article>
-                @endforelse
-            </div>
-        </section>
+        @if (!empty($mostrarBloquesPrincipal))
+            <section class="sec split-sec" id="explorar-modos">
+
+                <section class="split-block" id="bloque-alquiler">
+                    <div class="split-block-head">
+                        <h3 class="split-title">Propiedades en alquiler</h3>
+                        <p class="split-sub">Solo publicaciones de alquiler disponibles.</p>
+                    </div>
+                    @if ($bloquesPrincipal['alquiler']->isEmpty())
+                        <div class="empty-list">Aun no hay propiedades en alquiler disponibles.</div>
+                    @else
+                        <div class="prop-grid">
+                            @foreach ($bloquesPrincipal['alquiler'] as $propiedad)
+                                <article class="card">
+                                    @if ($propiedad->portadaImagen)
+                                        <img class="card-cover" src="{{ route('portal.propiedades.imagen', [$propiedad, $propiedad->portadaImagen]) }}" alt="Portada de {{ $propiedad->titulo }}">
+                                    @else
+                                        <div class="card-empty">Sin foto</div>
+                                    @endif
+                                    <div class="card-body">
+                                        <p class="card-type">{{ $propiedad->tipoPropiedad?->nombre ?? 'Propiedad' }}</p>
+                                        <h3 class="card-title">{{ $propiedad->titulo }}</h3>
+                                        <p class="card-loc">
+                                            {{ $propiedad->ubicacion?->distrito ?? 'Sin distrito' }},
+                                            {{ $propiedad->ubicacion?->departamento ?? 'Sin departamento' }}
+                                        </p>
+                                        <p class="card-price">S/ {{ number_format((float) $propiedad->precio, 2, '.', ',') }}</p>
+                                        @if ($propiedad->precio_usd !== null)
+                                            <p class="card-price-usd">US$ {{ number_format((float) $propiedad->precio_usd, 2, '.', ',') }}</p>
+                                        @endif
+                                        <div class="meta-row">
+                                            <span class="meta-chip">Alquiler</span>
+                                            <span class="meta-chip">{{ $propiedad->imagenes_count }} foto(s)</span>
+                                            <span class="meta-chip">{{ $propiedad->contactos_count }} contacto(s)</span>
+                                            <span class="meta-chip">{{ $propiedad->visitas_count }} clic(s)</span>
+                                            <span class="meta-chip">{{ $propiedad->comentarios_count }} comentario(s)</span>
+                                            <span class="meta-chip" data-favoritos-id="{{ $propiedad->id }}">{{ $propiedad->favoritos_count }} favorito(s)</span>
+                                        </div>
+                                        <div class="card-actions">
+                                            @auth
+                                                <button
+                                                    type="button"
+                                                    class="card-favorite-btn {{ $favoritasIds->contains($propiedad->id) ? 'active' : '' }}"
+                                                    data-favorito-url="{{ route('portal.propiedades.favoritos.toggle', $propiedad) }}"
+                                                    data-favorita="{{ $favoritasIds->contains($propiedad->id) ? '1' : '0' }}"
+                                                    data-propiedad-id="{{ $propiedad->id }}"
+                                                    aria-label="{{ $favoritasIds->contains($propiedad->id) ? 'Quitar de favoritos' : 'Agregar a favoritos' }}"
+                                                    aria-pressed="{{ $favoritasIds->contains($propiedad->id) ? 'true' : 'false' }}"
+                                                    title="{{ $favoritasIds->contains($propiedad->id) ? 'Quitar de favoritos' : 'Agregar a favoritos' }}"
+                                                >
+                                                    <i class="card-favorite-glyph bi {{ $favoritasIds->contains($propiedad->id) ? 'bi-heart-fill' : 'bi-heart' }}" aria-hidden="true"></i>
+                                                </button>
+                                            @else
+                                                <a href="{{ route('login') }}" class="card-favorite-btn" title="Inicia sesion para guardar favoritos">
+                                                    <i class="card-favorite-glyph bi bi-heart" aria-hidden="true"></i>
+                                                </a>
+                                            @endauth
+                                            <a class="card-link" href="{{ route('portal.propiedades.show', $propiedad) }}">
+                                    <i class="bi bi-arrow-up-right-circle" aria-hidden="true"></i>
+                                    <span>Ver detalle</span>
+                                </a>
+                                        </div>
+                                    </div>
+                                </article>
+                            @endforeach
+                        </div>
+                    @endif
+                </section>
+
+                <section class="split-block" id="bloque-proyectos">
+                    <div class="split-block-head">
+                        <h3 class="split-title">Proyectos inmobiliarios</h3>
+                        <p class="split-sub">Solo publicaciones de tipo proyecto inmobiliario.</p>
+                    </div>
+                    @if ($bloquesPrincipal['proyectos']->isEmpty())
+                        <div class="empty-list">Aun no hay proyectos inmobiliarios disponibles.</div>
+                    @else
+                        <div class="prop-grid">
+                            @foreach ($bloquesPrincipal['proyectos'] as $propiedad)
+                                <article class="card">
+                                    @if ($propiedad->portadaImagen)
+                                        <img class="card-cover" src="{{ route('portal.propiedades.imagen', [$propiedad, $propiedad->portadaImagen]) }}" alt="Portada de {{ $propiedad->titulo }}">
+                                    @else
+                                        <div class="card-empty">Sin foto</div>
+                                    @endif
+                                    <div class="card-body">
+                                        <p class="card-type">{{ $propiedad->tipoPropiedad?->nombre ?? 'Proyecto' }}</p>
+                                        <h3 class="card-title">{{ $propiedad->titulo }}</h3>
+                                        <p class="card-loc">
+                                            {{ $propiedad->ubicacion?->distrito ?? 'Sin distrito' }},
+                                            {{ $propiedad->ubicacion?->departamento ?? 'Sin departamento' }}
+                                        </p>
+                                        <p class="card-price">S/ {{ number_format((float) $propiedad->precio, 2, '.', ',') }}</p>
+                                        @if ($propiedad->precio_usd !== null)
+                                            <p class="card-price-usd">US$ {{ number_format((float) $propiedad->precio_usd, 2, '.', ',') }}</p>
+                                        @endif
+                                        <div class="meta-row">
+                                            <span class="meta-chip">Proyecto</span>
+                                            <span class="meta-chip">{{ $propiedad->imagenes_count }} foto(s)</span>
+                                            <span class="meta-chip">{{ $propiedad->contactos_count }} contacto(s)</span>
+                                            <span class="meta-chip">{{ $propiedad->visitas_count }} clic(s)</span>
+                                            <span class="meta-chip">{{ $propiedad->comentarios_count }} comentario(s)</span>
+                                            <span class="meta-chip" data-favoritos-id="{{ $propiedad->id }}">{{ $propiedad->favoritos_count }} favorito(s)</span>
+                                        </div>
+                                        <div class="card-actions">
+                                            @auth
+                                                <button
+                                                    type="button"
+                                                    class="card-favorite-btn {{ $favoritasIds->contains($propiedad->id) ? 'active' : '' }}"
+                                                    data-favorito-url="{{ route('portal.propiedades.favoritos.toggle', $propiedad) }}"
+                                                    data-favorita="{{ $favoritasIds->contains($propiedad->id) ? '1' : '0' }}"
+                                                    data-propiedad-id="{{ $propiedad->id }}"
+                                                    aria-label="{{ $favoritasIds->contains($propiedad->id) ? 'Quitar de favoritos' : 'Agregar a favoritos' }}"
+                                                    aria-pressed="{{ $favoritasIds->contains($propiedad->id) ? 'true' : 'false' }}"
+                                                    title="{{ $favoritasIds->contains($propiedad->id) ? 'Quitar de favoritos' : 'Agregar a favoritos' }}"
+                                                >
+                                                    <i class="card-favorite-glyph bi {{ $favoritasIds->contains($propiedad->id) ? 'bi-heart-fill' : 'bi-heart' }}" aria-hidden="true"></i>
+                                                </button>
+                                            @else
+                                                <a href="{{ route('login') }}" class="card-favorite-btn" title="Inicia sesion para guardar favoritos">
+                                                    <i class="card-favorite-glyph bi bi-heart" aria-hidden="true"></i>
+                                                </a>
+                                            @endauth
+                                            <a class="card-link" href="{{ route('portal.propiedades.show', $propiedad) }}">
+                                    <i class="bi bi-arrow-up-right-circle" aria-hidden="true"></i>
+                                    <span>Ver detalle</span>
+                                </a>
+                                        </div>
+                                    </div>
+                                </article>
+                            @endforeach
+                        </div>
+                    @endif
+                </section>
+            </section>
+        @endif
+
 @endsection
 
 @section('scripts')
 <script>
+        // Favoritos con actualizacion en vivo de estado y contador.
         (() => {
-            const wrap = document.querySelector('[data-cat-wrap]');
-            const list = document.querySelector('[data-cat-list]');
-            const toggle = document.querySelector('[data-cat-toggle]');
-            const catsBlock = document.querySelector('[data-quick-block-cats]');
-            const filtersBlock = document.querySelector('[data-quick-block-filters]');
-            const quickBlocks = Array.from(document.querySelectorAll('[data-quick-block]'));
-            const mobileQuery = window.matchMedia('(max-width: 760px)');
-
-            const setCollapsed = () => {
-                if (!wrap || !toggle) {
-                    return;
-                }
-
-                wrap.classList.remove('is-expanded');
-                toggle.setAttribute('aria-expanded', 'false');
-                toggle.textContent = 'Ver mas categorias';
-            };
-
-            const isCatsVisible = () => {
-                if (!mobileQuery.matches) {
-                    return true;
-                }
-
-                if (!catsBlock) {
-                    return true;
-                }
-
-                return catsBlock.open;
-            };
-
-            const updateToggleVisibility = () => {
-                if (!wrap || !list || !toggle) {
-                    return;
-                }
-
-                if (!mobileQuery.matches) {
-                    wrap.classList.remove('has-hidden');
-                    setCollapsed();
-                    return;
-                }
-
-                if (!isCatsVisible()) {
-                    setCollapsed();
-                    return;
-                }
-
-                const hasHiddenItems = list.scrollWidth > (list.clientWidth + 4);
-                if (hasHiddenItems || wrap.classList.contains('is-expanded')) {
-                    wrap.classList.add('has-hidden');
-                } else {
-                    wrap.classList.remove('has-hidden');
-                    setCollapsed();
-                }
-            };
-
-            if (toggle && wrap) {
-                toggle.addEventListener('click', () => {
-                    const expand = !wrap.classList.contains('is-expanded');
-                    wrap.classList.toggle('is-expanded', expand);
-                    toggle.setAttribute('aria-expanded', expand ? 'true' : 'false');
-                    toggle.textContent = expand ? 'Ver menos categorias' : 'Ver mas categorias';
-                });
-            }
-
-            quickBlocks.forEach((block) => {
-                block.addEventListener('toggle', () => {
-                    if (mobileQuery.matches && block.open) {
-                        quickBlocks.forEach((otherBlock) => {
-                            if (otherBlock !== block) {
-                                otherBlock.open = false;
-                            }
-                        });
-                    }
-
-                    if (block === catsBlock && !block.open) {
-                        setCollapsed();
-                    }
-
-                    updateToggleVisibility();
-                });
-            });
-
-            const syncDetailsByViewport = () => {
-                if (!quickBlocks.length) {
-                    return;
-                }
-
-                if (!mobileQuery.matches) {
-                    quickBlocks.forEach((block) => {
-                        block.open = true;
-                    });
-                    return;
-                }
-
-                if (catsBlock) {
-                    catsBlock.open = false;
-                }
-                if (filtersBlock) {
-                    filtersBlock.open = false;
-                }
-            };
-
-            syncDetailsByViewport();
-            window.addEventListener('resize', updateToggleVisibility);
-
-            if (typeof mobileQuery.addEventListener === 'function') {
-                mobileQuery.addEventListener('change', () => {
-                    syncDetailsByViewport();
-                    updateToggleVisibility();
-                });
-            } else if (typeof mobileQuery.addListener === 'function') {
-                mobileQuery.addListener(() => {
-                    syncDetailsByViewport();
-                    updateToggleVisibility();
-                });
-            }
-
-            updateToggleVisibility();
-        })();
-
-                (() => {
             const favoriteButtons = Array.from(document.querySelectorAll('.card-favorite-btn[data-favorito-url]'));
             if (!favoriteButtons.length) {
                 return;
@@ -525,14 +459,18 @@
                         const favorita = payload.favorita === true;
                         button.dataset.favorita = favorita ? '1' : '0';
                         button.classList.toggle('active', favorita);
-                        button.innerHTML = favorita ? '&#9829;' : '&#9825;';
+                        const glyph = button.querySelector('.card-favorite-glyph');
+                        if (glyph) {
+                            glyph.classList.remove('bi-heart', 'bi-heart-fill');
+                            glyph.classList.add(favorita ? 'bi-heart-fill' : 'bi-heart');
+                        }
                         button.setAttribute('aria-label', favorita ? 'Quitar de favoritos' : 'Agregar a favoritos');
                         button.setAttribute('title', favorita ? 'Quitar de favoritos' : 'Agregar a favoritos');
                         button.setAttribute('aria-pressed', favorita ? 'true' : 'false');
 
-                        const favoritosId = button.dataset.favoritosId || '';
-                        if (favoritosId !== '') {
-                            document.querySelectorAll(`[data-favoritos-id="${favoritosId}"]`).forEach((counter) => {
+                        const propiedadId = button.dataset.propiedadId || '';
+                        if (propiedadId !== '') {
+                            document.querySelectorAll(`.meta-chip[data-favoritos-id="${propiedadId}"]`).forEach((counter) => {
                                 counter.textContent = `${payload.total_favoritos ?? 0} favorito(s)`;
                             });
                         }

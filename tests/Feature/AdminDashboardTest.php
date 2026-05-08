@@ -10,6 +10,7 @@ use App\Models\Ubicacion;
 use App\Models\User;
 use App\Models\Visita;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 class AdminDashboardTest extends TestCase
@@ -91,6 +92,15 @@ class AdminDashboardTest extends TestCase
         $response = $this->actingAs($cliente)->get(route('admin.dashboard'));
 
         $response->assertForbidden();
+    }
+
+    public function test_unverified_admin_is_redirected_to_verification_notice(): void
+    {
+        $admin = User::factory()->unverified()->create(['rol' => 'admin']);
+
+        $response = $this->actingAs($admin)->get(route('admin.dashboard'));
+
+        $response->assertRedirect(route('verification.notice'));
     }
 
     public function test_admin_can_update_tipo_propiedad(): void
@@ -251,5 +261,68 @@ class AdminDashboardTest extends TestCase
             'email' => 'carlos.mod@example.com',
             'rol' => 'agente',
         ]);
+    }
+
+    public function test_admin_can_update_support_terms_content_from_admin_panel(): void
+    {
+        $admin = User::factory()->create(['rol' => 'admin']);
+        $storageDir = storage_path('app/support-pages');
+        File::deleteDirectory($storageDir);
+
+        $response = $this->actingAs($admin)->patch(route('admin.PanelAdministrativo.soporte.update'), [
+            'support_slug' => 'terminos-condiciones',
+            'title' => 'Terminos actualizados',
+            'summary' => 'Resumen nuevo de terminos del portal.',
+            'updated_at' => '2026-05-07',
+            'sections_text' => "## Uso del portal\nTexto de prueba.\n- Bullet uno\n\n## Pagos\nNo hay pagos directos en el portal.",
+            'return_to' => 'support',
+        ]);
+
+        $response->assertRedirect(route('admin.PanelAdministrativo.soporte', ['support_page' => 'terminos-condiciones']));
+
+        $filePath = storage_path('app/support-pages/terminos-condiciones.json');
+        $this->assertFileExists($filePath);
+
+        $decoded = json_decode((string) file_get_contents($filePath), true);
+        $this->assertIsArray($decoded);
+        $this->assertSame('Terminos actualizados', $decoded['title'] ?? null);
+        $this->assertSame('terminos-condiciones', $decoded['slug'] ?? null);
+        $this->assertNotEmpty($decoded['sections'] ?? []);
+
+        File::deleteDirectory($storageDir);
+    }
+
+    public function test_non_admin_cannot_update_support_terms_content(): void
+    {
+        $cliente = User::factory()->create(['rol' => 'cliente']);
+
+        $response = $this->actingAs($cliente)->patch(route('admin.PanelAdministrativo.soporte.update'), [
+            'support_slug' => 'terminos-condiciones',
+            'title' => 'No permitido',
+            'summary' => 'No permitido',
+            'updated_at' => '2026-05-07',
+            'sections_text' => "## Prueba\nTexto",
+        ]);
+
+        $response->assertForbidden();
+    }
+
+    public function test_admin_can_view_support_editor_page(): void
+    {
+        $admin = User::factory()->create(['rol' => 'admin']);
+
+        $response = $this->actingAs($admin)->get(route('admin.PanelAdministrativo.soporte'));
+
+        $response->assertOk();
+        $response->assertSee('Terminos y soporte del portal');
+    }
+
+    public function test_non_admin_cannot_view_support_editor_page(): void
+    {
+        $cliente = User::factory()->create(['rol' => 'cliente']);
+
+        $response = $this->actingAs($cliente)->get(route('admin.PanelAdministrativo.soporte'));
+
+        $response->assertForbidden();
     }
 }

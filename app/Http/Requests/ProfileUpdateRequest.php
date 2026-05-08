@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class ProfileUpdateRequest extends FormRequest
 {
@@ -22,9 +23,21 @@ class ProfileUpdateRequest extends FormRequest
      */
     public function rules(): array
     {
+        $user = $this->user();
+        $dniRequired = $user !== null
+            && $user->tipo_persona === 'natural'
+            && trim((string) $user->dni) === '';
+
         return [
             'name' => ['required', 'string', 'max:120'],
             'apellidos' => ['nullable', 'string', 'max:120'],
+            'dni' => [
+                Rule::requiredIf($dniRequired),
+                'nullable',
+                'string',
+                'max:20',
+                Rule::unique('users', 'dni')->ignore($user?->id),
+            ],
             'telefono' => ['nullable', 'string', 'max:30'],
             'whatsapp' => ['nullable', 'string', 'max:30'],
             'direccion' => ['nullable', 'string', 'max:255'],

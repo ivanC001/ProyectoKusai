@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Favorito;
 use App\Models\ImagenPropiedad;
 use App\Models\Propiedad;
+use App\Models\ResenaPropiedad;
 use App\Models\TipoPropiedad;
 use App\Models\Ubicacion;
 use App\Models\User;
@@ -27,6 +28,21 @@ class PortalTest extends TestCase
         $response->assertSee($propiedadVisible->titulo);
     }
 
+    public function test_home_shows_separated_blocks_for_sale_rent_and_projects(): void
+    {
+        [$ventaCasa, $alquilerDepartamento, , $proyecto] = $this->seedPropiedades();
+
+        $response = $this->get(route('home'));
+
+        $response->assertOk();
+        $response->assertSee('Propiedades en venta');
+        $response->assertSee('Propiedades en alquiler');
+        $response->assertSee('Proyectos inmobiliarios');
+        $response->assertSee($ventaCasa->titulo);
+        $response->assertSee($alquilerDepartamento->titulo);
+        $response->assertSee($proyecto->titulo);
+    }
+
     public function test_home_registers_unique_portal_visit_per_session(): void
     {
         $this->seedPropiedades();
@@ -45,13 +61,27 @@ class PortalTest extends TestCase
         [$ventaCasa, $alquilerDepartamento] = $this->seedPropiedades();
 
         $response = $this->get(route('home', [
-            'operacion' => 'alquiler',
+            'modo' => 'alquilar',
             'tipo_propiedad_id' => $alquilerDepartamento->tipo_propiedad_id,
         ]));
 
         $response->assertOk();
         $response->assertSee($alquilerDepartamento->titulo);
         $response->assertDontSee($ventaCasa->titulo);
+    }
+
+    public function test_home_filters_projects_mode_using_project_property_type(): void
+    {
+        [$ventaCasa, $alquilerDepartamento, , $proyecto] = $this->seedPropiedades();
+
+        $response = $this->get(route('home', [
+            'modo' => 'proyectos',
+        ]));
+
+        $response->assertOk();
+        $response->assertSee($proyecto->titulo);
+        $response->assertDontSee($ventaCasa->titulo);
+        $response->assertDontSee($alquilerDepartamento->titulo);
     }
 
     public function test_authenticated_user_can_filter_home_by_favorites(): void
@@ -101,6 +131,77 @@ class PortalTest extends TestCase
         $response->assertOk();
     }
 
+    public function test_buyer_can_send_contact_request_to_property_owner(): void
+    {
+        config(['mail.default' => 'array']);
+        [$propiedadVisible] = $this->seedPropiedades();
+        $comprador = User::factory()->create([
+            'name' => 'Comprador',
+            'apellidos' => 'Prueba',
+            'email' => 'comprador@example.com',
+        ]);
+
+        $response = $this->actingAs($comprador)->post(route('portal.propiedades.contacto', $propiedadVisible), [
+            'nombre' => 'Comprador Interesado',
+            'email' => 'comprador@example.com',
+            'telefono' => '999888777',
+            'mensaje' => 'Hola, deseo recibir mas informacion de esta propiedad.',
+        ]);
+
+        $response
+            ->assertRedirect()
+            ->assertSessionHas('contacto_success');
+
+        $this->assertDatabaseHas('contactos', [
+            'propiedad_id' => $propiedadVisible->id,
+            'user_id' => $comprador->id,
+            'nombre' => 'Comprador Interesado',
+            'email' => 'comprador@example.com',
+            'telefono' => '999888777',
+            'mensaje' => 'Hola, deseo recibir mas informacion de esta propiedad.',
+        ]);
+    }
+
+    public function test_guest_cannot_send_contact_request(): void
+    {
+        [$propiedadVisible] = $this->seedPropiedades();
+
+        $response = $this->post(route('portal.propiedades.contacto', $propiedadVisible), [
+            'nombre' => 'Invitado',
+            'email' => 'invitado@example.com',
+            'mensaje' => 'Quiero informacion de la propiedad.',
+        ]);
+
+        $response->assertRedirect(route('login'));
+        $this->assertDatabaseCount('contactos', 0);
+    }
+
+    public function test_user_cannot_send_duplicate_contact_request_for_same_property(): void
+    {
+        [$propiedadVisible] = $this->seedPropiedades();
+        $comprador = User::factory()->create([
+            'name' => 'Comprador',
+            'apellidos' => 'Duplicado',
+            'email' => 'comprador.dup@example.com',
+        ]);
+
+        $payload = [
+            'nombre' => 'Comprador Unico',
+            'email' => 'comprador.dup@example.com',
+            'telefono' => '998887776',
+            'mensaje' => 'Hola, me interesa esta propiedad para compra.',
+        ];
+
+        $this->actingAs($comprador)->post(route('portal.propiedades.contacto', $propiedadVisible), $payload)
+            ->assertRedirect();
+
+        $this->actingAs($comprador)->post(route('portal.propiedades.contacto', $propiedadVisible), $payload)
+            ->assertRedirect()
+            ->assertSessionHas('contacto_info');
+
+        $this->assertDatabaseCount('contactos', 1);
+    }
+
     public function test_property_click_endpoint_registers_click(): void
     {
         [$propiedadVisible] = $this->seedPropiedades();
@@ -145,6 +246,81 @@ class PortalTest extends TestCase
         ]);
     }
 
+    public function test_authenticated_user_can_publish_comment_on_property(): void
+    {
+        [$propiedadVisible] = $this->seedPropiedades();
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)
+            ->from(route('portal.propiedades.show', $propiedadVisible))
+            ->post(route('portal.propiedades.comentarios.store', $propiedadVisible), [
+                'puntaje' => 4,
+                'mensaje' => 'Me interesa esta propiedad, quisiera saber si acepta visita esta semana.',
+            ]);
+
+        $response->assertRedirect(route('portal.propiedades.show', $propiedadVisible));
+        $response->assertSessionHas('comentario_success');
+
+        $this->assertDatabaseHas('comentarios_propiedad', [
+            'propiedad_id' => $propiedadVisible->id,
+            'user_id' => $user->id,
+            'puntaje' => 4,
+            'mensaje' => 'Me interesa esta propiedad, quisiera saber si acepta visita esta semana.',
+        ]);
+    }
+
+    public function test_authenticated_user_can_create_or_update_review_on_property(): void
+    {
+        [$propiedadVisible] = $this->seedPropiedades();
+        $user = User::factory()->create();
+
+        $crearResponse = $this->actingAs($user)
+            ->from(route('portal.propiedades.show', $propiedadVisible))
+            ->post(route('portal.propiedades.resenas.store', $propiedadVisible), [
+                'puntaje' => 5,
+                'comentario' => 'Excelente ubicacion y buena atencion del anunciante.',
+            ]);
+
+        $crearResponse->assertRedirect(route('portal.propiedades.show', $propiedadVisible));
+        $crearResponse->assertSessionHas('resena_success');
+
+        $this->assertDatabaseHas('resenas_propiedad', [
+            'propiedad_id' => $propiedadVisible->id,
+            'user_id' => $user->id,
+            'puntaje' => 5,
+        ]);
+
+        $actualizarResponse = $this->actingAs($user)
+            ->from(route('portal.propiedades.show', $propiedadVisible))
+            ->post(route('portal.propiedades.resenas.store', $propiedadVisible), [
+                'puntaje' => 3,
+                'comentario' => 'Actualizo mi experiencia despues de la visita.',
+            ]);
+
+        $actualizarResponse->assertRedirect(route('portal.propiedades.show', $propiedadVisible));
+        $actualizarResponse->assertSessionHas('resena_success');
+
+        $this->assertDatabaseHas('resenas_propiedad', [
+            'propiedad_id' => $propiedadVisible->id,
+            'user_id' => $user->id,
+            'puntaje' => 3,
+        ]);
+        $this->assertSame(1, ResenaPropiedad::query()->count());
+    }
+
+    public function test_guest_cannot_publish_review_on_property(): void
+    {
+        [$propiedadVisible] = $this->seedPropiedades();
+
+        $response = $this->post(route('portal.propiedades.resenas.store', $propiedadVisible), [
+            'puntaje' => 4,
+            'comentario' => 'Muy buena opcion de compra.',
+        ]);
+
+        $response->assertRedirect(route('login'));
+        $this->assertDatabaseCount('resenas_propiedad', 0);
+    }
+
     public function test_guest_cannot_toggle_property_favorite(): void
     {
         [$propiedadVisible] = $this->seedPropiedades();
@@ -155,14 +331,30 @@ class PortalTest extends TestCase
         $this->assertDatabaseCount('favoritos', 0);
     }
 
+    public function test_unverified_user_cannot_toggle_property_favorite(): void
+    {
+        [$propiedadVisible] = $this->seedPropiedades();
+        $user = User::factory()->unverified()->create();
+
+        $response = $this->actingAs($user)
+            ->postJson(route('portal.propiedades.favoritos.toggle', $propiedadVisible));
+
+        $response->assertForbidden();
+        $response->assertJson([
+            'ok' => false,
+        ]);
+        $this->assertDatabaseCount('favoritos', 0);
+    }
+
     /**
-     * @return array{0: Propiedad, 1: Propiedad, 2: Propiedad}
+     * @return array{0: Propiedad, 1: Propiedad, 2: Propiedad, 3: Propiedad}
      */
     private function seedPropiedades(): array
     {
         $user = User::factory()->create();
         $tipoCasa = TipoPropiedad::query()->create(['nombre' => 'Casa']);
         $tipoDepartamento = TipoPropiedad::query()->create(['nombre' => 'Departamento']);
+        $tipoProyecto = TipoPropiedad::query()->create(['nombre' => 'Proyecto inmobiliario']);
         $ubicacion = Ubicacion::query()->create([
             'departamento' => 'UCAYALI',
             'provincia' => 'CORONEL PORTILLO',
@@ -214,6 +406,21 @@ class PortalTest extends TestCase
             'ubicacion_id' => $ubicacion->id,
         ]);
 
-        return [$ventaCasa, $alquilerDepartamento, $noDisponible];
+        $proyecto = Propiedad::query()->create([
+            'titulo' => 'Condominio Valle Verde',
+            'descripcion' => 'Proyecto inmobiliario con areas comunes y etapas de preventa activas.',
+            'precio' => 90000,
+            'tipo' => 'venta',
+            'estado' => 'disponible',
+            'direccion' => 'Av. Proyecto 250',
+            'habitaciones' => 2,
+            'banos' => 2,
+            'area' => 95,
+            'user_id' => $user->id,
+            'tipo_propiedad_id' => $tipoProyecto->id,
+            'ubicacion_id' => $ubicacion->id,
+        ]);
+
+        return [$ventaCasa, $alquilerDepartamento, $noDisponible, $proyecto];
     }
 }

@@ -14,8 +14,24 @@ class EmailVerificationPromptController extends Controller
      */
     public function __invoke(Request $request): RedirectResponse|View
     {
-        return $request->user()->hasVerifiedEmail()
-                    ? redirect()->intended('/')
-                    : view('auth.verify-email');
+        $user = $request->user();
+
+        if ($user->hasVerifiedEmail()) {
+            return redirect()->intended('/');
+        }
+
+        $email = (string) $user->email;
+        $atPos = strpos($email, '@');
+        $maskedEmail = $email;
+        if ($atPos !== false && $atPos > 2) {
+            $prefix = substr($email, 0, 2);
+            $domain = substr($email, $atPos);
+            $maskedEmail = $prefix.str_repeat('*', max(2, $atPos - 2)).$domain;
+        }
+
+        return view('auth.verify-email', [
+            'maskedEmail' => $maskedEmail,
+            'codeExpiresAt' => $user->email_verification_code_expires_at,
+        ]);
     }
 }

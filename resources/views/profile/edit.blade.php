@@ -300,6 +300,9 @@
             @if (session('status') === 'profile-updated')
                 <div class="message ok">Perfil actualizado correctamente.</div>
             @endif
+            @if (session('profile_dni_required'))
+                <div class="message error">{{ session('profile_dni_required') }}</div>
+            @endif
 
             @if ($errors->any())
                 <div class="message error">
@@ -331,10 +334,17 @@
                         <input class="input input-readonly" id="email_readonly" type="email" value="{{ $user->email }}" readonly>
                     </div>
 
-                    <div class="field">
-                        <label for="dni_readonly">DNI (no editable)</label>
-                        <input class="input input-readonly" id="dni_readonly" type="text" value="{{ $user->dni ?: 'No registrado' }}" readonly>
-                    </div>
+                    @if (empty($user->dni))
+                        <div class="field">
+                            <label for="dni">DNI (obligatorio)</label>
+                            <input class="input" id="dni" type="text" name="dni" value="{{ old('dni', $user->dni) }}" maxlength="20" required>
+                        </div>
+                    @else
+                        <div class="field">
+                            <label for="dni_readonly">DNI (no editable)</label>
+                            <input class="input input-readonly" id="dni_readonly" type="text" value="{{ $user->dni }}" readonly>
+                        </div>
+                    @endif
 
                     <div class="field">
                         <label for="telefono">Telefono</label>

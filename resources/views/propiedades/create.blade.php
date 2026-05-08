@@ -232,6 +232,24 @@
         font-size: .84rem;
         margin-top: 8px;
     }
+    .project-guide {
+        margin-top: 16px;
+        border: 1px solid #c8ddd0;
+        border-radius: 12px;
+        background: #f4faf7;
+        color: #2f5b49;
+        padding: 12px 14px;
+    }
+    .project-guide h3 {
+        margin: 0 0 6px;
+        color: #18553b;
+        font-size: 1rem;
+    }
+    .project-guide ul {
+        margin: 0;
+        padding-left: 18px;
+        font-size: .88rem;
+    }
     .error-text {
         color: #a72828;
         font-size: 12px;
@@ -378,6 +396,15 @@
                     @endforeach
                 </div>
             @endif
+        </section>
+
+        <section class="project-guide" aria-label="Guia para publicar proyecto inmobiliario">
+            <h3>Si vas a publicar un proyecto inmobiliario</h3>
+            <ul>
+                <li>En el paso 3 elige un tipo que diga "(proyecto)".</li>
+                <li>La operacion para proyecto es venta y se ajusta automaticamente.</li>
+                <li>En titulo y descripcion indica nombre del proyecto, etapas, entrega y precios desde.</li>
+            </ul>
         </section>
 
         <div class="actions">

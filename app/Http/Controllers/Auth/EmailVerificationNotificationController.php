@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Throwable;
 
 class EmailVerificationNotificationController extends Controller
 {
@@ -17,8 +18,14 @@ class EmailVerificationNotificationController extends Controller
             return redirect()->intended('/');
         }
 
-        $request->user()->sendEmailVerificationNotification();
+        try {
+            $request->user()->sendEmailVerificationCode();
+        } catch (Throwable $exception) {
+            report($exception);
 
-        return back()->with('status', 'verification-link-sent');
+            return back()->with('warning', 'No se pudo reenviar el codigo de verificacion. Revisa la configuracion SMTP e intenta nuevamente.');
+        }
+
+        return back()->with('status', 'verification-code-sent');
     }
 }

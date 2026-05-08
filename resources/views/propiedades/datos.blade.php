@@ -139,6 +139,7 @@
     }
     .span-12 { grid-column: span 12; }
     .span-8 { grid-column: span 8; }
+    .span-6 { grid-column: span 6; }
     .span-4 { grid-column: span 4; }
     .span-3 { grid-column: span 3; }
     .span-2 { grid-column: span 2; }
@@ -250,8 +251,32 @@
         color: #2d5a49;
         background: #f8fbf9;
     }
+    .project-hint {
+        grid-column: span 12;
+        border: 1px solid #c7d9cf;
+        border-radius: 12px;
+        background: #f4faf7;
+        color: #2f5b49;
+        padding: 10px 12px;
+        font-size: .86rem;
+        line-height: 1.45;
+        display: none;
+    }
+    .project-hint.active {
+        display: block;
+    }
+    .project-hint strong {
+        color: #18553b;
+    }
+    .project-hint-list {
+        margin: 8px 0 0;
+        padding-left: 18px;
+    }
+    .project-hint-list li {
+        margin: 3px 0;
+    }
     @media (max-width: 900px) {
-        .span-8, .span-4, .span-3, .span-2 {
+        .span-8, .span-6, .span-4, .span-3, .span-2 {
             grid-column: span 12;
         }
         .steps {
@@ -337,7 +362,7 @@
                     <select id="tipo_propiedad_id" name="tipo_propiedad_id">
                         <option value="">Selecciona...</option>
                         @foreach ($tiposPropiedad as $tipo)
-                            <option value="{{ $tipo->id }}" @selected(old('tipo_propiedad_id') == $tipo->id)>{{ $tipo->nombre }}</option>
+                            <option value="{{ $tipo->id }}" @selected(old('tipo_propiedad_id') == $tipo->id)>{{ $tipo->nombre }}@if(str_contains(mb_strtolower($tipo->nombre), 'proyecto')) (proyecto)@endif</option>
                         @endforeach
                     </select>
                     @error('tipo_propiedad_id') <span class="error-text">{{ $message }}</span> @enderror
@@ -358,6 +383,15 @@
                     @error('tipo') <span class="error-text">{{ $message }}</span> @enderror
                 </div>
 
+                <div class="project-hint" id="project-hint">
+                    <strong>Registro de proyecto inmobiliario:</strong> esta publicacion se mostrara en la seccion Proyectos.
+                    <ul class="project-hint-list">
+                        <li>Operacion obligatoria: <strong>Venta</strong>.</li>
+                        <li>En el titulo usa el nombre del proyecto y zona. Ejemplo: "Condominio Los Cedros - Pucallpa".</li>
+                        <li>En la descripcion indica etapas, fecha estimada de entrega, precios desde y metrajes.</li>
+                    </ul>
+                </div>
+
                 <div class="field span-3">
                     <label for="estado">ESTADO</label>
                     <select id="estado" name="estado">
@@ -368,13 +402,19 @@
                     @error('estado') <span class="error-text">{{ $message }}</span> @enderror
                 </div>
 
-                <div class="field span-3">
+                <div class="field span-2">
                     <label for="precio">PRECIO (S/.)</label>
                     <input id="precio" name="precio" type="number" step="0.01" min="0" value="{{ old('precio') }}" placeholder="125000">
                     @error('precio') <span class="error-text">{{ $message }}</span> @enderror
                 </div>
 
-                <div class="field span-3">
+                <div class="field span-2">
+                    <label for="precio_usd">PRECIO (US$)</label>
+                    <input id="precio_usd" name="precio_usd" type="number" step="0.01" min="0" value="{{ old('precio_usd') }}" placeholder="35000">
+                    @error('precio_usd') <span class="error-text">{{ $message }}</span> @enderror
+                </div>
+
+                <div class="field span-2">
                     <label for="area">AREA (M2)</label>
                     <input id="area" name="area" type="number" step="0.01" min="0" value="{{ old('area') }}" placeholder="120">
                     @error('area') <span class="error-text">{{ $message }}</span> @enderror
@@ -433,10 +473,16 @@
                     @error('distrito') <span class="error-text">{{ $message }}</span> @enderror
                 </div>
 
-                <div class="field span-8">
-                    <label for="direccion">DIRECCION REFERENCIAL</label>
-                    <input id="direccion" name="direccion" type="text" value="{{ old('direccion') }}" placeholder="Av. Principal 123, cerca a plaza...">
+                <div class="field span-6">
+                    <label for="direccion">DIRECCION COMPLETA</label>
+                    <input id="direccion" name="direccion" type="text" value="{{ old('direccion') }}" placeholder="Av. Principal 123, Urbanizacion, Calle, Nro.">
                     @error('direccion') <span class="error-text">{{ $message }}</span> @enderror
+                </div>
+
+                <div class="field span-6">
+                    <label for="referencia">REFERENCIA</label>
+                    <input id="referencia" name="referencia" type="text" value="{{ old('referencia') }}" placeholder="Frente al parque, cerca al mercado, etc.">
+                    @error('referencia') <span class="error-text">{{ $message }}</span> @enderror
                 </div>
 
                 <div class="field span-4">
@@ -599,6 +645,37 @@
             } else {
                 setCoordText(NaN, NaN);
             }
+        })();
+    </script>
+
+    <script>
+        (() => {
+            const tipoPropiedadSelect = document.getElementById('tipo_propiedad_id');
+            const operacionSelect = document.getElementById('tipo');
+            const hint = document.getElementById('project-hint');
+
+            if (!tipoPropiedadSelect || !operacionSelect || !hint) {
+                return;
+            }
+
+            const isProyecto = () => {
+                const option = tipoPropiedadSelect.options[tipoPropiedadSelect.selectedIndex];
+                const nombre = (option?.textContent || '').toLowerCase();
+                return nombre.includes('proyecto');
+            };
+
+            const refresh = () => {
+                const proyecto = isProyecto();
+                hint.classList.toggle('active', proyecto);
+
+                if (proyecto && operacionSelect.value !== 'venta') {
+                    operacionSelect.value = 'venta';
+                }
+            };
+
+            tipoPropiedadSelect.addEventListener('change', refresh);
+            operacionSelect.addEventListener('change', refresh);
+            refresh();
         })();
     </script>
 

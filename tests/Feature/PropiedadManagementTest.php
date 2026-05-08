@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\ImagenPropiedad;
+use App\Models\Contacto;
 use App\Models\Propiedad;
 use App\Models\TipoPropiedad;
 use App\Models\Ubicacion;
@@ -75,6 +76,7 @@ class PropiedadManagementTest extends TestCase
             'titulo' => 'Casa renovada en esquina',
             'descripcion' => 'Casa completamente renovada, lista para mudarse con servicios completos.',
             'precio' => 150000,
+            'precio_usd' => 41000.50,
             'tipo' => 'venta',
             'estado' => 'reservado',
             'direccion' => 'Av. Peru 456',
@@ -98,6 +100,7 @@ class PropiedadManagementTest extends TestCase
         $this->assertSame('Casa renovada en esquina', $propiedad->titulo);
         $this->assertSame('reservado', $propiedad->estado);
         $this->assertSame((string) $tipoNuevo->id, (string) $propiedad->tipo_propiedad_id);
+        $this->assertSame('41000.50', (string) $propiedad->precio_usd);
         $this->assertSame('UCAYALI', $propiedad->ubicacion->departamento);
         $this->assertSame('CORONEL PORTILLO', $propiedad->ubicacion->provincia);
         $this->assertSame('YARINACOCHA', $propiedad->ubicacion->distrito);
@@ -219,6 +222,36 @@ class PropiedadManagementTest extends TestCase
         $response->assertRedirect(route('propiedades.edit', $propiedad));
         $response->assertSessionHasErrors('nuevas_fotos');
         $this->assertDatabaseHas('imagenes_propiedad', ['id' => $imagen->id]);
+    }
+
+    public function test_owner_can_view_only_received_contact_requests(): void
+    {
+        [$user, $propiedad] = $this->createPropiedad();
+        [, $otraPropiedad] = $this->createPropiedad();
+
+        Contacto::query()->create([
+            'propiedad_id' => $propiedad->id,
+            'nombre' => 'Comprador visible',
+            'email' => 'visible@example.com',
+            'telefono' => '999888777',
+            'mensaje' => 'Estoy interesado en esta propiedad.',
+        ]);
+
+        Contacto::query()->create([
+            'propiedad_id' => $otraPropiedad->id,
+            'nombre' => 'Comprador oculto',
+            'email' => 'oculto@example.com',
+            'telefono' => '911222333',
+            'mensaje' => 'Esta solicitud pertenece a otro usuario.',
+        ]);
+
+        $response = $this->actingAs($user)->get(route('propiedades.solicitudes'));
+
+        $response->assertOk();
+        $response->assertSee('Comprador visible');
+        $response->assertSee('visible@example.com');
+        $response->assertDontSee('Comprador oculto');
+        $response->assertDontSee('oculto@example.com');
     }
 
     /**

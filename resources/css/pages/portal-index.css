@@ -285,6 +285,7 @@
         .logout-inline {
             margin: 0;
         }
+        /* Bloque de categorias/ciudades/orden de la portada */
         .quick-nav {
             position: sticky;
             top: 72px;
@@ -452,8 +453,9 @@
             font-size: .95rem;
             white-space: nowrap;
         }
+        /* Hero principal */
         .hero {
-            min-height: 74vh;
+            min-height: 62vh;
             padding: 88px 20px 54px;
             text-align: center;
             color: #fff;
@@ -548,6 +550,54 @@
             cursor: pointer;
         }
         .sec { padding: 64px 40px; }
+        .split-sec {
+            padding-top: 20px;
+        }
+        .split-intro {
+            margin-bottom: 20px;
+        }
+        .split-nav {
+            position: sticky;
+            top: 86px;
+            z-index: 12;
+            margin-bottom: 14px;
+            border: 1px solid #d2dfd8;
+            border-radius: 12px;
+            background: #f7fbf9;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            overflow-x: auto;
+        }
+        .split-link {
+            border: 1px solid #cddad2;
+            border-radius: 999px;
+            background: #fff;
+            color: #2f5948;
+            font-size: .88rem;
+            font-weight: 800;
+            padding: 7px 12px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .split-block {
+            margin-top: 20px;
+        }
+        .split-block-head {
+            margin-bottom: 12px;
+        }
+        .split-title {
+            margin: 0 0 6px;
+            color: #194634;
+            font-family: "Fraunces", serif;
+            font-size: clamp(1.35rem, 2.5vw, 1.9rem);
+            line-height: 1.1;
+        }
+        .split-sub {
+            color: #5f7f71;
+            font-size: .94rem;
+        }
         .shead {
             display: flex;
             justify-content: space-between;
@@ -576,18 +626,29 @@
             grid-template-columns: repeat(3, 1fr);
             gap: 16px;
         }
+        /* Tarjetas de propiedades */
         .card {
-            background: #fff;
-            border: 1.5px solid var(--line);
-            border-radius: var(--radius);
+            background: linear-gradient(180deg, #ffffff 0%, #fbfdfc 100%);
+            border: 1.5px solid #ccddd3;
+            border-radius: 18px;
             overflow: hidden;
-            box-shadow: 0 6px 18px rgba(13, 35, 25, .08);
+            box-shadow: 0 10px 28px rgba(11, 39, 27, .1);
+            transition: transform .24s ease, box-shadow .24s ease, border-color .2s ease;
+        }
+        .card:hover {
+            transform: translateY(-4px);
+            border-color: #aac4b8;
+            box-shadow: 0 16px 34px rgba(11, 39, 27, .15);
         }
         .card-cover {
             width: 100%;
             height: 210px;
             object-fit: cover;
             background: #dde9e2;
+            transition: transform .4s ease;
+        }
+        .card:hover .card-cover {
+            transform: scale(1.035);
         }
         .card-empty {
             width: 100%;
@@ -598,58 +659,94 @@
             background: linear-gradient(140deg, #dfece5, #eff6f2);
             font-weight: 700;
         }
-        .card-body { padding: 12px 14px 14px; }
-        .card-type { color: var(--green-700); font-weight: 700; text-transform: uppercase; font-size: .68rem; }
-        .card-title { font-family: "Fraunces", serif; font-size: 1rem; margin: 4px 0; }
-        .card-loc { color: #6a8678; font-size: .82rem; margin-bottom: 10px; }
-        .card-price { color: #b04e27; font-family: "Fraunces", serif; font-size: 1.2rem; font-weight: 800; }
+        .card-body { padding: 14px 16px 16px; }
+        .card-type {
+            color: #1f7a54;
+            font-weight: 800;
+            text-transform: uppercase;
+            font-size: .7rem;
+            letter-spacing: .07em;
+        }
+        .card-title {
+            font-family: "Fraunces", serif;
+            font-size: 1.14rem;
+            margin: 6px 0;
+            color: #113f2d;
+            line-height: 1.2;
+        }
+        .card-loc {
+            color: #6a8678;
+            font-size: .86rem;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+        .card-price {
+            color: #b04e27;
+            font-family: "Fraunces", serif;
+            font-size: 1.85rem;
+            font-weight: 800;
+            line-height: 1;
+        }
+        .card-price-usd {
+            margin-top: 5px;
+            color: #2f7d58;
+            font-size: .94rem;
+            font-weight: 800;
+            letter-spacing: .02em;
+        }
         .meta-row {
-            margin-top: 8px;
+            margin-top: 11px;
             display: flex;
             gap: 6px;
             flex-wrap: wrap;
         }
         .meta-chip {
             border-radius: 999px;
-            border: 1px solid #ccdad2;
-            background: #f4f9f6;
+            border: 1px solid #c5d8ce;
+            background: #f1f8f4;
             color: #3f6757;
-            font-size: .72rem;
-            font-weight: 700;
-            padding: 4px 8px;
+            font-size: .74rem;
+            font-weight: 800;
+            padding: 5px 9px;
         }
         .card-link {
             display: inline-flex;
             align-items: center;
             justify-content: center;
+            gap: 6px;
             border-radius: 9px;
-            border: 1px solid #c9d7d0;
-            background: #f7fbf9;
-            color: #1b6c49;
+            border: 1px solid #2b7f57;
+            background: linear-gradient(130deg, #2f8f61, #17573c);
+            color: #fff;
             font-weight: 800;
             font-size: .88rem;
-            padding: 7px 11px;
+            padding: 8px 12px;
             transition: .2s ease;
         }
+        .card-link i {
+            font-size: .95rem;
+            line-height: 1;
+        }
         .card-link:hover {
-            border-color: #9bbba9;
-            background: #eef6f1;
+            filter: brightness(1.05);
+            box-shadow: 0 8px 16px rgba(22, 87, 60, .25);
         }
         .card-actions {
-            margin-top: 10px;
+            margin-top: 14px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 8px;
         }
+        /* Boton de favoritos: icono estable para evitar deformacion visual */
         .card-favorite-btn {
-            width: 36px;
-            height: 36px;
-            border: 1px solid #c7d5cd;
+            width: 40px;
+            height: 40px;
+            border: 1px solid #b8cfc2;
             border-radius: 999px;
-            background: #fff;
+            background: #f7fbf9;
             color: #315947;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             line-height: 1;
             display: inline-flex;
             align-items: center;
@@ -659,10 +756,19 @@
             transition: .2s ease;
             flex-shrink: 0;
         }
+        .card-favorite-glyph {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            font-size: 1rem;
+            line-height: 1;
+        }
         .card-favorite-btn.active {
-            border-color: #cf8b94;
-            background: #fff1f4;
-            color: #bb3f57;
+            border-color: #d17f8e;
+            background: #fff2f5;
+            color: #b6435b;
         }
         .card-favorite-btn:hover {
             transform: translateY(-1px);
@@ -952,6 +1058,10 @@
             text-align: center;
             color: #5f7f71;
         }
+        .empty-list a {
+            color: #1b6c49;
+            font-weight: 800;
+        }
         .pager {
             margin-top: 18px;
             display: flex;
@@ -1043,6 +1153,9 @@
             #nav { padding: 0 14px; }
             .nav-actions { display: none; }
             .mobile-nav { display: block; }
+            .split-nav {
+                top: 78px;
+            }
             .quick-nav {
                 box-shadow: none;
                 border-bottom: none;

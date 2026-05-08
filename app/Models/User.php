@@ -2,7 +2,8 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Notifications\EmailVerificationCodeNotification;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -10,9 +11,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
@@ -34,12 +36,19 @@ class User extends Authenticatable
         'direccion',
         'foto_perfil',
         'descripcion',
+        'provider',
+        'provider_id',
+        'avatar',
         'rol',
         'tipo_persona',
         'empresa',
         'nombre_comercial',
         'estado',
         'ultimo_login',
+        'solicitudes_vistas_at',
+        'email_verification_code_hash',
+        'email_verification_code_expires_at',
+        'email_verification_code_sent_at',
     ];
 
     /**
@@ -63,7 +72,57 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'ultimo_login' => 'datetime',
+            'solicitudes_vistas_at' => 'datetime',
+            'email_verification_code_expires_at' => 'datetime',
+            'email_verification_code_sent_at' => 'datetime',
         ];
+    }
+
+    public function issueEmailVerificationCode(int $minutesToExpire = 15): string
+    {
+        $ttl = max(5, min($minutesToExpire, 60));
+        $code = (string) random_int(100000, 999999);
+
+        $this->forceFill([
+            'email_verification_code_hash' => Hash::make($code),
+            'email_verification_code_expires_at' => now()->addMinutes($ttl),
+            'email_verification_code_sent_at' => now(),
+        ])->save();
+
+        return $code;
+    }
+
+    public function sendEmailVerificationCode(int $minutesToExpire = 15): void
+    {
+        $ttl = max(5, min($minutesToExpire, 60));
+        $code = $this->issueEmailVerificationCode($ttl);
+
+        $this->notify(new EmailVerificationCodeNotification($code, $ttl));
+    }
+
+    public function hasValidEmailVerificationCode(string $code): bool
+    {
+        $code = trim($code);
+
+        if (
+            $code === ''
+            || $this->email_verification_code_hash === null
+            || $this->email_verification_code_expires_at === null
+            || now()->greaterThan($this->email_verification_code_expires_at)
+        ) {
+            return false;
+        }
+
+        return Hash::check($code, $this->email_verification_code_hash);
+    }
+
+    public function clearEmailVerificationCode(): void
+    {
+        $this->forceFill([
+            'email_verification_code_hash' => null,
+            'email_verification_code_expires_at' => null,
+            'email_verification_code_sent_at' => null,
+        ])->save();
     }
 
     public function esEmpresa(): bool
@@ -104,6 +163,21 @@ class User extends Authenticatable
     public function favoritos(): HasMany
     {
         return $this->hasMany(Favorito::class, 'user_id');
+    }
+
+    public function solicitudesContactoEnviadas(): HasMany
+    {
+        return $this->hasMany(Contacto::class, 'user_id');
+    }
+
+    public function comentariosPropiedad(): HasMany
+    {
+        return $this->hasMany(ComentarioPropiedad::class, 'user_id');
+    }
+
+    public function resenasPropiedad(): HasMany
+    {
+        return $this->hasMany(ResenaPropiedad::class, 'user_id');
     }
 
     public function visitas(): HasMany

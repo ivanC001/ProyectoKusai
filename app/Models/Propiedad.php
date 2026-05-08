@@ -19,9 +19,11 @@ class Propiedad extends Model
         'titulo',
         'descripcion',
         'precio',
+        'precio_usd',
         'tipo',
         'estado',
         'direccion',
+        'referencia',
         'latitud',
         'longitud',
         'habitaciones',
@@ -36,6 +38,7 @@ class Propiedad extends Model
     {
         return [
             'precio' => 'decimal:2',
+            'precio_usd' => 'decimal:2',
             'latitud' => 'decimal:7',
             'longitud' => 'decimal:7',
             'area' => 'decimal:2',
@@ -70,6 +73,16 @@ class Propiedad extends Model
     public function contactos(): HasMany
     {
         return $this->hasMany(Contacto::class, 'propiedad_id');
+    }
+
+    public function comentarios(): HasMany
+    {
+        return $this->hasMany(ComentarioPropiedad::class, 'propiedad_id');
+    }
+
+    public function resenas(): HasMany
+    {
+        return $this->hasMany(ResenaPropiedad::class, 'propiedad_id');
     }
 
     public function favoritos(): HasMany

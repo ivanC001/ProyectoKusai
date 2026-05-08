@@ -14,6 +14,7 @@ class Contacto extends Model
 
     protected $fillable = [
         'propiedad_id',
+        'user_id',
         'nombre',
         'email',
         'telefono',
@@ -23,5 +24,10 @@ class Contacto extends Model
     public function propiedad(): BelongsTo
     {
         return $this->belongsTo(Propiedad::class, 'propiedad_id');
+    }
+
+    public function usuario(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 }
