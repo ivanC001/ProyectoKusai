@@ -270,7 +270,7 @@
     .project-hint-list li {
         margin: 3px 0;
     }
-    @media (max-width: 900px) {
+    @media (max-width: 1100px) {
         .cover-preview {
             grid-template-columns: 1fr;
         }
@@ -279,6 +279,12 @@
         }
         .panel {
             padding: 16px;
+        }
+    }
+    @media (max-width: 700px) {
+        .actions .btn {
+            width: 100%;
+            text-align: center;
         }
     }
 </style>

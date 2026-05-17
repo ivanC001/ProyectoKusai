@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Contacto;
+use App\Models\ComentarioPortal;
 use App\Models\ComentarioPropiedad;
 use App\Models\Favorito;
 use App\Models\ImagenPropiedad;
@@ -12,9 +13,12 @@ use App\Models\ResenaPropiedad;
 use App\Models\TipoPropiedad;
 use App\Models\Ubicacion;
 use App\Models\Visita;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Mail\Message;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
@@ -23,13 +27,73 @@ use Illuminate\View\View;
 
 class PortalController extends Controller
 {
+    public function comoPublicar(): View
+    {
+        $comentariosPortal = ComentarioPortal::query()
+            ->where('visible', true)
+            ->with('usuario:id,name,apellidos')
+            ->latest()
+            ->limit(10)
+            ->get();
+
+        $metricasPortal = ComentarioPortal::query()
+            ->where('visible', true)
+            ->selectRaw('COUNT(*) as total')
+            ->selectRaw('AVG(puntaje) as promedio')
+            ->first();
+
+        $totalComentariosPortal = (int) ($metricasPortal?->total ?? 0);
+        $promedioPuntajePortal = $metricasPortal?->promedio;
+
+        return view('portal.como-publicar', [
+            'comentariosPortal' => $comentariosPortal,
+            'promedioPuntajePortal' => $promedioPuntajePortal !== null
+                ? number_format((float) $promedioPuntajePortal, 1, '.', ',')
+                : null,
+            'totalComentariosPortal' => $totalComentariosPortal,
+        ]);
+    }
+
+    public function storeComentarioComoPublicar(Request $request): RedirectResponse
+    {
+        $validated = $request->validateWithBag('portalFeedback', [
+            'puntaje' => ['required', 'integer', 'between:1,5'],
+            'comentario' => ['required', 'string', 'min:10', 'max:1000'],
+            'sugerencia' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $feedback = ComentarioPortal::query()->firstOrNew([
+            'user_id' => $request->user()->id,
+        ]);
+
+        $feedback->puntaje = (int) $validated['puntaje'];
+        $feedback->comentario = trim($validated['comentario']);
+        $feedback->sugerencia = isset($validated['sugerencia'])
+            ? trim((string) $validated['sugerencia'])
+            : null;
+        if (! $feedback->exists) {
+            $feedback->visible = true;
+        }
+        $feedback->save();
+
+        $mensaje = $feedback->wasRecentlyCreated
+            ? 'Gracias por tu reseña. Ya guardamos tu comentario.'
+            : 'Actualizamos tu reseña y sugerencia correctamente.';
+
+        return back()->with('portal_feedback_success', $mensaje);
+    }
+
     public function index(Request $request): View
     {
         $this->registerPortalVisit($request);
 
-        $tiposPropiedad = TipoPropiedad::query()
-            ->orderBy('nombre')
-            ->get(['id', 'nombre']);
+        $tiposPropiedad = Cache::remember(
+            'portal:tipos-propiedad:v1',
+            now()->addMinutes(30),
+            static fn () => TipoPropiedad::query()
+                ->orderBy('nombre')
+                ->get(['id', 'nombre'])
+        );
 
         $tiposProyectoIds = $tiposPropiedad
             ->filter(function (TipoPropiedad $tipo): bool {
@@ -91,12 +155,13 @@ class PortalController extends Controller
             ->where('estado', 'disponible')
             ->with([
                 'usuario:id,name,apellidos',
+                'usuario.verificacionUsuario:id,user_id,estado,dni_legible,datos_coinciden,contacto_validado',
                 'tipoPropiedad:id,nombre',
                 'ubicacion:id,departamento,provincia,distrito',
                 'portadaImagen',
             ])
-            ->withCount(['imagenes', 'contactos', 'favoritos', 'visitas', 'comentarios', 'resenas'])
-            ->withAvg('resenas', 'puntaje');
+            ->withCount(['imagenes', 'contactos', 'favoritos', 'visitas', 'comentarios']);
+        $this->applyUsuarioVerificadoSelect($query);
 
         $this->applyFilters($query, $filtros);
 
@@ -107,19 +172,22 @@ class PortalController extends Controller
         }
 
         $destacadas = (clone $query)
+            ->orderByDesc('verificada_por_kusay')
             ->orderByDesc('visitas_count')
             ->orderByDesc('contactos_count')
             ->latest()
             ->limit(3)
             ->get();
 
+        $totalResultados = (clone $query)->count();
+
+        $query->orderByDesc('verificada_por_kusay');
         match ($filtros['orden']) {
             'precio_asc' => $query->orderBy('precio'),
             'precio_desc' => $query->orderByDesc('precio'),
             default => $query->latest(),
         };
 
-        $totalResultados = (clone $query)->count();
         $propiedades = $query->paginate(9)->withQueryString();
 
         $filtrosActivos = $filtros['operacion'] !== ''
@@ -147,12 +215,15 @@ class PortalController extends Controller
                 ->where('estado', 'disponible')
                 ->with([
                     'usuario:id,name,apellidos',
+                    'usuario.verificacionUsuario:id,user_id,estado,dni_legible,datos_coinciden,contacto_validado',
                     'tipoPropiedad:id,nombre',
                     'ubicacion:id,departamento,provincia,distrito',
                     'portadaImagen',
                 ])
                 ->withCount(['imagenes', 'contactos', 'favoritos', 'visitas', 'comentarios'])
+                ->orderByDesc('verificada_por_kusay')
                 ->latest();
+            $this->applyUsuarioVerificadoSelect($queryBloques);
 
             $bloqueVentaQuery = (clone $queryBloques)
                 ->where('tipo', 'venta');
@@ -180,15 +251,19 @@ class PortalController extends Controller
                     ->get();
         }
 
-        $ciudadesTop = Ubicacion::query()
-            ->select('ubicaciones.distrito', 'ubicaciones.departamento')
-            ->selectRaw('COUNT(propiedades.id) as propiedades_count')
-            ->join('propiedades', 'propiedades.ubicacion_id', '=', 'ubicaciones.id')
-            ->where('propiedades.estado', 'disponible')
-            ->groupBy('ubicaciones.distrito', 'ubicaciones.departamento')
-            ->orderByDesc('propiedades_count')
-            ->limit(8)
-            ->get();
+        $ciudadesTop = Cache::remember(
+            'portal:ciudades-top:v1',
+            now()->addMinutes(10),
+            static fn () => Ubicacion::query()
+                ->select('ubicaciones.distrito', 'ubicaciones.departamento')
+                ->selectRaw('COUNT(propiedades.id) as propiedades_count')
+                ->join('propiedades', 'propiedades.ubicacion_id', '=', 'ubicaciones.id')
+                ->where('propiedades.estado', 'disponible')
+                ->groupBy('ubicaciones.distrito', 'ubicaciones.departamento')
+                ->orderByDesc('propiedades_count')
+                ->limit(8)
+                ->get()
+        );
 
         $propiedadesVisibles = $destacadas
             ->pluck('id')
@@ -236,17 +311,27 @@ class PortalController extends Controller
 
         $propiedad->loadMissing([
             'usuario:id,name,apellidos,email,telefono,whatsapp',
+            'usuario.verificacionUsuario:id,user_id,estado,dni_legible,datos_coinciden,contacto_validado',
             'tipoPropiedad:id,nombre',
             'ubicacion:id,departamento,provincia,distrito',
             'imagenes:id,propiedad_id,ruta_imagen',
             'portadaImagen',
-            'comentarios:id,propiedad_id,user_id,puntaje,mensaje,created_at',
+            'comentarios' => function ($comentariosQuery): void {
+                $comentariosQuery
+                    ->select('id', 'propiedad_id', 'user_id', 'puntaje', 'mensaje', 'created_at')
+                    ->latest()
+                    ->limit(40);
+            },
             'comentarios.usuario:id,name,apellidos',
-            'resenas:id,propiedad_id,user_id,puntaje,comentario,created_at',
+            'resenas' => function ($resenasQuery): void {
+                $resenasQuery
+                    ->select('id', 'propiedad_id', 'user_id', 'puntaje', 'comentario', 'created_at')
+                    ->latest()
+                    ->limit(40);
+            },
             'resenas.usuario:id,name,apellidos',
         ]);
         $propiedad->loadCount(['imagenes', 'contactos', 'favoritos', 'visitas', 'comentarios', 'resenas']);
-        $propiedad->loadAvg('resenas', 'puntaje');
 
         $esFavorita = false;
         if ($request->user() !== null) {
@@ -262,7 +347,7 @@ class PortalController extends Controller
         ]);
     }
 
-    public function storeComentario(Request $request, Propiedad $propiedad)
+    public function storeComentario(Request $request, Propiedad $propiedad): RedirectResponse
     {
         if ($propiedad->estado !== 'disponible') {
             abort(404);
@@ -283,7 +368,7 @@ class PortalController extends Controller
         return back()->with('comentario_success', 'Tu comentario fue publicado correctamente.');
     }
 
-    public function storeResena(Request $request, Propiedad $propiedad)
+    public function storeResena(Request $request, Propiedad $propiedad): RedirectResponse
     {
         if ($propiedad->estado !== 'disponible') {
             abort(404);
@@ -357,10 +442,16 @@ class PortalController extends Controller
             $favorito->delete();
             $favorita = false;
         } else {
-            Favorito::create([
-                'user_id' => $user->id,
-                'propiedad_id' => $propiedad->id,
-            ]);
+            try {
+                Favorito::query()->firstOrCreate([
+                    'user_id' => $user->id,
+                    'propiedad_id' => $propiedad->id,
+                ]);
+            } catch (QueryException $exception) {
+                if (! $this->isDuplicateKeyException($exception)) {
+                    throw $exception;
+                }
+            }
             $favorita = true;
         }
 
@@ -376,7 +467,7 @@ class PortalController extends Controller
         ]);
     }
 
-    public function solicitarContacto(Request $request, Propiedad $propiedad)
+    public function solicitarContacto(Request $request, Propiedad $propiedad): RedirectResponse
     {
         if ($propiedad->estado !== 'disponible') {
             abort(404);
@@ -388,7 +479,7 @@ class PortalController extends Controller
         }
 
         $propiedad->loadMissing([
-            'usuario:id,name,apellidos,email',
+            'usuario:id,name,apellidos,email,solicitudes_vistas_at',
             'ubicacion:id,departamento,provincia,distrito',
         ]);
 
@@ -399,46 +490,57 @@ class PortalController extends Controller
             'mensaje' => ['required', 'string', 'min:10', 'max:1000'],
         ]);
 
-        $solicitudExistente = Contacto::query()
-            ->where('propiedad_id', $propiedad->id)
-            ->where('user_id', $usuarioSolicitante->id)
-            ->exists();
+        try {
+            $contacto = Contacto::query()->firstOrCreate(
+                [
+                    'propiedad_id' => $propiedad->id,
+                    'user_id' => $usuarioSolicitante->id,
+                ],
+                [
+                    'nombre' => trim($validated['nombre']),
+                    'email' => trim($validated['email']),
+                    'telefono' => isset($validated['telefono']) ? trim((string) $validated['telefono']) : null,
+                    'mensaje' => trim($validated['mensaje']),
+                ]
+            );
+        } catch (QueryException $exception) {
+            if ($this->isDuplicateKeyException($exception)) {
+                return back()->with('contacto_info', 'Ya enviaste una solicitud para esta propiedad. El anunciante te responderá pronto.');
+            }
 
-        if ($solicitudExistente) {
-            return back()->with('contacto_info', 'Ya enviaste una solicitud para esta propiedad. El anunciante te respondera pronto.');
+            throw $exception;
         }
 
-        $contacto = Contacto::query()->create([
-            'propiedad_id' => $propiedad->id,
-            'user_id' => $usuarioSolicitante->id,
-            'nombre' => trim($validated['nombre']),
-            'email' => trim($validated['email']),
-            'telefono' => isset($validated['telefono']) ? trim((string) $validated['telefono']) : null,
-            'mensaje' => trim($validated['mensaje']),
-        ]);
+        if (! $contacto->wasRecentlyCreated) {
+            return back()->with('contacto_info', 'Ya enviaste una solicitud para esta propiedad. El anunciante te responderá pronto.');
+        }
+
+        $propiedad->usuario?->forgetUnreadSolicitudesCache();
 
         $correoDestino = $propiedad->usuario?->email;
         if ($correoDestino !== null && $correoDestino !== '') {
-            try {
-                Mail::raw($this->buildContactEmailBody($propiedad, $contacto), function (Message $message) use ($correoDestino, $propiedad, $contacto): void {
-                    $message
-                        ->to($correoDestino)
-                        ->replyTo($contacto->email, $contacto->nombre)
-                        ->subject('Nueva solicitud por tu propiedad: '.$propiedad->titulo);
-                });
-            } catch (\Throwable $exception) {
-                Log::warning('No se pudo enviar correo de solicitud de contacto.', [
-                    'propiedad_id' => $propiedad->id,
-                    'contacto_id' => $contacto->id,
-                    'error' => $exception->getMessage(),
-                ]);
-            }
+            dispatch(function () use ($correoDestino, $propiedad, $contacto): void {
+                try {
+                    Mail::raw($this->buildContactEmailBody($propiedad, $contacto), function (Message $message) use ($correoDestino, $propiedad, $contacto): void {
+                        $message
+                            ->to($correoDestino)
+                            ->replyTo($contacto->email, $contacto->nombre)
+                            ->subject('Nueva solicitud por tu propiedad: '.$propiedad->titulo);
+                    });
+                } catch (\Throwable $exception) {
+                    Log::warning('No se pudo enviar correo de solicitud de contacto.', [
+                        'propiedad_id' => $propiedad->id,
+                        'contacto_id' => $contacto->id,
+                        'error' => $exception->getMessage(),
+                    ]);
+                }
+            })->afterResponse();
         }
 
-        return back()->with('contacto_success', 'Tu solicitud fue enviada al anunciante. Te contactara con los datos que registraste.');
+        return back()->with('contacto_success', 'Tu solicitud fue enviada al anunciante. Te contactará con los datos que registraste.');
     }
 
-    public function imagen(Propiedad $propiedad, ImagenPropiedad $imagen)
+    public function imagen(Request $request, Propiedad $propiedad, ImagenPropiedad $imagen)
     {
         if ($propiedad->estado !== 'disponible') {
             abort(404);
@@ -448,11 +550,29 @@ class PortalController extends Controller
             abort(404);
         }
 
-        if (! Storage::disk('public')->exists($imagen->ruta_imagen)) {
+        $disk = Storage::disk('public');
+        if (! $disk->exists($imagen->ruta_imagen)) {
             abort(404);
         }
 
-        return Storage::disk('public')->response($imagen->ruta_imagen);
+        $path = $disk->path($imagen->ruta_imagen);
+        $lastModified = @filemtime($path) ?: time();
+        $size = @filesize($path) ?: 0;
+        $etag = '"'.sha1($imagen->id.'|'.$lastModified.'|'.$size).'"';
+        $ifNoneMatch = trim((string) $request->headers->get('If-None-Match'));
+
+        $headers = [
+            'Cache-Control' => 'public, max-age=604800, stale-while-revalidate=86400',
+            'ETag' => $etag,
+            'Last-Modified' => gmdate('D, d M Y H:i:s', $lastModified).' GMT',
+            'X-Content-Type-Options' => 'nosniff',
+        ];
+
+        if ($ifNoneMatch === $etag) {
+            return response('', 304, $headers);
+        }
+
+        return response()->file($path, $headers);
     }
 
     /**
@@ -556,13 +676,11 @@ class PortalController extends Controller
     private function registerPortalVisit(Request $request): void
     {
         $visitorKey = $this->resolvePortalVisitorKey($request);
+        $today = now()->toDateString();
+        $cacheKey = 'portal:visit:'.$visitorKey.':'.$today;
 
-        $alreadyVisitedToday = PortalVisita::query()
-            ->where('visitor_key', $visitorKey)
-            ->whereDate('fecha_visita', now()->toDateString())
-            ->exists();
-
-        if ($alreadyVisitedToday) {
+        // Evita doble escritura bajo alta concurrencia (operacion atomica en cache).
+        if (! Cache::add($cacheKey, true, now()->endOfDay())) {
             return;
         }
 
@@ -593,6 +711,16 @@ class PortalController extends Controller
 
     private function registerPropertyClick(Request $request, Propiedad $propiedad): void
     {
+        $visitorKey = $this->resolvePortalVisitorKey($request);
+        $bucketMinutes = (int) floor(now()->minute / 15) * 15;
+        $timeBucket = now()->format('YmdH').str_pad((string) $bucketMinutes, 2, '0', STR_PAD_LEFT);
+        $cacheKey = 'portal:click:'.$propiedad->id.':'.$visitorKey.':'.$timeBucket;
+
+        // Limita rafagas repetidas de la misma sesion/usuario y reduce carga de escritura.
+        if (! Cache::add($cacheKey, true, now()->addMinutes(16))) {
+            return;
+        }
+
         Visita::create([
             'propiedad_id' => $propiedad->id,
             'user_id' => $request->user()?->id,
@@ -612,18 +740,60 @@ class PortalController extends Controller
             'Nueva solicitud de contacto en Kusay.pe',
             '',
             'Propiedad: '.$propiedad->titulo,
-            'Ubicacion: '.($ubicacion !== '' ? $ubicacion : 'No especificada'),
+            'Ubicación: '.($ubicacion !== '' ? $ubicacion : 'No especificada'),
             'Precio: S/ '.number_format((float) $propiedad->precio, 2, '.', ','),
             '',
             'Datos del interesado:',
             'Nombre: '.$contacto->nombre,
             'Correo: '.$contacto->email,
-            'Telefono: '.($contacto->telefono ?: 'No indicado'),
+            'Teléfono: '.($contacto->telefono ?: 'No indicado'),
             '',
             'Mensaje:',
             $contacto->mensaje,
             '',
             'Responde directamente a este correo para contactar al interesado.',
         ]);
+    }
+    private function resolveTipoIcon(string $tipoNombre): string
+    {
+        $nombre = Str::lower($tipoNombre);
+
+        return match (true) {
+            str_contains($nombre, 'terreno') => 'bi bi-tree-fill',
+            str_contains($nombre, 'casa') => 'bi bi-house-door-fill',
+            str_contains($nombre, 'depart') => 'bi bi-building',
+            str_contains($nombre, 'lote') => 'bi bi-triangle-fill',
+            str_contains($nombre, 'local') => 'bi bi-shop',
+            str_contains($nombre, 'chacra'), str_contains($nombre, 'finca') => 'bi bi-flower1',
+            str_contains($nombre, 'oficina') => 'bi bi-briefcase-fill',
+            str_contains($nombre, 'proyecto') => 'bi bi-map-fill',
+            default => 'bi bi-tag-fill',
+        };
+    }
+
+    private function isDuplicateKeyException(QueryException $exception): bool
+    {
+        return $exception->getCode() === '23000'
+            || $exception->getCode() === '19';
+    }
+
+    /**
+     * @param \Illuminate\Database\Eloquent\Builder<Propiedad> $query
+     */
+    private function applyUsuarioVerificadoSelect($query): void
+    {
+        $query
+            ->addSelect('propiedades.*')
+            ->selectRaw(
+                "EXISTS(
+                    SELECT 1
+                    FROM verificaciones_usuario vu
+                    WHERE vu.user_id = propiedades.user_id
+                      AND vu.estado = 'aprobado'
+                      AND vu.dni_legible = 1
+                      AND vu.datos_coinciden = 1
+                      AND vu.contacto_validado = 1
+                ) as verificada_por_kusay"
+            );
     }
 }

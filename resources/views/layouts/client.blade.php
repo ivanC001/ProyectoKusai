@@ -12,7 +12,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @vite(['resources/css/client-app.css', 'resources/js/app.js'])
     @yield('styles')
 </head>
 <body>
@@ -20,24 +20,13 @@
         $homeUrl = route('home');
         $isHomeRoute = request()->routeIs('home');
         $isCreateRoute = request()->routeIs('propiedades.create');
+        $isHowToPublishRoute = request()->routeIs('portal.como-publicar');
         $isMineRoute = request()->routeIs('propiedades.mine');
         $isSolicitudesRoute = request()->routeIs('propiedades.solicitudes');
         $authUser = auth()->user();
         $userFullName = $authUser ? trim(($authUser->name ?? '').' '.($authUser->apellidos ?? '')) : '';
         $userInitial = $authUser ? strtoupper(substr(trim($authUser->name ?? 'U'), 0, 1)) : 'U';
-        $solicitudesRecibidasCount = 0;
-        if ($authUser) {
-            $solicitudesQuery = \App\Models\Contacto::query()
-                ->whereHas('propiedad', function ($query) use ($authUser): void {
-                    $query->where('user_id', $authUser->id);
-                });
-
-            if ($authUser->solicitudes_vistas_at) {
-                $solicitudesQuery->where('created_at', '>', $authUser->solicitudes_vistas_at);
-            }
-
-            $solicitudesRecibidasCount = $solicitudesQuery->count();
-        }
+        $solicitudesRecibidasCount = $authUser ? $authUser->unreadSolicitudesCount() : 0;
     @endphp
     <!-- MENU: estilos en resources/css/app.css y resources/css/layouts/client.css -->
     <header class="client-nav">
@@ -50,7 +39,7 @@
 
             <ul class="client-links">
                 <li><a href="{{ $homeUrl }}#props" class="nav-hash-link {{ $isHomeRoute ? 'is-active home-default' : '' }}" data-nav-target="props">Propiedades</a></li>
-                <li><a href="{{ route('propiedades.create') }}" class="{{ $isCreateRoute ? 'is-active' : '' }}">Como publicar</a></li>
+                <li><a href="{{ route('portal.como-publicar') }}" class="{{ $isHowToPublishRoute || $isCreateRoute ? 'is-active' : '' }}">Como publicar</a></li>
                 <li><a href="{{ $homeUrl }}#destacadas" class="nav-hash-link" data-nav-target="destacadas">Destacadas</a></li>
             </ul>
             <div class="client-actions">
@@ -138,6 +127,14 @@
                                     </span>
                                     <i class="bi bi-chevron-right user-item-arrow" aria-hidden="true"></i>
                                 </a>
+                                <a href="{{ route('profile.verificacion.edit') }}" class="user-item">
+                                    <span class="user-item-icon"><i class="bi bi-patch-check" aria-hidden="true"></i></span>
+                                    <span class="user-item-copy">
+                                        <strong>Verificar perfil</strong>
+                                        <small>Sube DNI frontal y reverso</small>
+                                    </span>
+                                    <i class="bi bi-chevron-right user-item-arrow" aria-hidden="true"></i>
+                                </a>
                             </div>
                             <form method="POST" action="{{ route('logout') }}" class="logout-inline">
                                 @csrf
@@ -208,9 +205,17 @@
                             <i class="bi bi-person-gear"></i>
                             <span>Ver y editar perfil</span>
                         </a>
+                        <a href="{{ route('profile.verificacion.edit') }}" class="client-mobile-link">
+                            <i class="bi bi-patch-check"></i>
+                            <span>Verificar perfil</span>
+                        </a>
                         <a href="{{ route('propiedades.create') }}" class="client-mobile-link">
                             <i class="bi bi-megaphone"></i>
                             <span>Publica gratis</span>
+                        </a>
+                        <a href="{{ route('portal.como-publicar') }}" class="client-mobile-link">
+                            <i class="bi bi-journal-text"></i>
+                            <span>Como publicar</span>
                         </a>
                         <form method="POST" action="{{ route('logout') }}" class="client-mobile-form">
                             @csrf
@@ -256,7 +261,7 @@
                 <h4>Navegacion</h4>
                 <a href="{{ route('home') }}#nuevaspropiedades">Propiedades</a>
                 <a href="{{ route('home') }}">Inicio</a>
-                <a href="{{ route('propiedades.create') }}">Como publicar</a>
+                <a href="{{ route('portal.como-publicar') }}">Como publicar</a>
                 <a href="{{ route('home') }}">Destacadas</a>
             </div>
 
@@ -287,6 +292,13 @@
         <div class="footer-bottom">
             <p>&copy; {{ now()->year }} Kusay.pe. Todos los derechos reservados.</p>
             <p>Portal inmobiliario de la selva y sierra peruana.</p>
+            <p class="footer-credit">
+                <span>Desarrollado por</span>
+                <a href="https://github.com/ivanC001" target="_blank" rel="noopener noreferrer">
+                    <i class="bi bi-github" aria-hidden="true"></i>
+                    <span>Ivan Calderon</span>
+                </a>
+            </p>
         </div>
     </footer>
 
@@ -320,3 +332,4 @@
     @yield('scripts')
 </body>
 </html>
+

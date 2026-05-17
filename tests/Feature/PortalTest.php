@@ -4,11 +4,13 @@ namespace Tests\Feature;
 
 use App\Models\Favorito;
 use App\Models\ImagenPropiedad;
+use App\Models\ComentarioPortal;
 use App\Models\Propiedad;
 use App\Models\ResenaPropiedad;
 use App\Models\TipoPropiedad;
 use App\Models\Ubicacion;
 use App\Models\User;
+use App\Models\VerificacionPropiedad;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -28,6 +30,66 @@ class PortalTest extends TestCase
         $response->assertSee($propiedadVisible->titulo);
     }
 
+    public function test_how_to_publish_page_can_be_rendered(): void
+    {
+        $response = $this->get(route('portal.como-publicar'));
+
+        $response->assertOk();
+        $response->assertSee('Cómo publicar tu propiedad en Kusay.pe', false);
+    }
+
+    public function test_authenticated_user_can_leave_feedback_in_how_to_publish_page(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->post(route('portal.como-publicar.comentarios.store'), [
+            'puntaje' => 5,
+            'comentario' => 'El flujo para publicar me parecio claro y facil de seguir.',
+            'sugerencia' => 'Podrian agregar una mini guia en video para nuevos usuarios.',
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('portal_feedback_success');
+
+        $this->assertDatabaseHas('comentarios_portal', [
+            'user_id' => $user->id,
+            'puntaje' => 5,
+            'comentario' => 'El flujo para publicar me parecio claro y facil de seguir.',
+            'sugerencia' => 'Podrian agregar una mini guia en video para nuevos usuarios.',
+        ]);
+    }
+
+    public function test_guest_cannot_leave_feedback_in_how_to_publish_page(): void
+    {
+        $response = $this->post(route('portal.como-publicar.comentarios.store'), [
+            'puntaje' => 4,
+            'comentario' => 'Muy buena experiencia publicando.',
+            'sugerencia' => 'Agregar mas ejemplos de fotos.',
+        ]);
+
+        $response->assertRedirect(route('login'));
+        $this->assertDatabaseCount('comentarios_portal', 0);
+    }
+
+    public function test_how_to_publish_page_hides_admin_only_suggestion_text(): void
+    {
+        $user = User::factory()->create();
+
+        ComentarioPortal::query()->create([
+            'user_id' => $user->id,
+            'puntaje' => 5,
+            'comentario' => 'Excelente experiencia de publicación.',
+            'sugerencia' => 'Texto privado solo para admin.',
+            'visible' => true,
+        ]);
+
+        $response = $this->get(route('portal.como-publicar'));
+
+        $response->assertOk();
+        $response->assertSee('Excelente experiencia de publicación.');
+        $response->assertDontSee('Texto privado solo para admin.');
+    }
+
     public function test_home_shows_separated_blocks_for_sale_rent_and_projects(): void
     {
         [$ventaCasa, $alquilerDepartamento, , $proyecto] = $this->seedPropiedades();
@@ -41,6 +103,51 @@ class PortalTest extends TestCase
         $response->assertSee($ventaCasa->titulo);
         $response->assertSee($alquilerDepartamento->titulo);
         $response->assertSee($proyecto->titulo);
+    }
+
+    public function test_home_prioritizes_verified_properties_at_the_top(): void
+    {
+        [$ventaCasa] = $this->seedPropiedades();
+
+        $ventaSinVerificar = Propiedad::query()->create([
+            'titulo' => 'Casa nueva sin verificar',
+            'descripcion' => 'Casa recientemente publicada aun sin verificacion.',
+            'precio' => 160000,
+            'tipo' => 'venta',
+            'estado' => 'disponible',
+            'direccion' => 'Jr. Reciente 888',
+            'habitaciones' => 3,
+            'banos' => 2,
+            'area' => 150,
+            'user_id' => $ventaCasa->user_id,
+            'tipo_propiedad_id' => $ventaCasa->tipo_propiedad_id,
+            'ubicacion_id' => $ventaCasa->ubicacion_id,
+        ]);
+
+        VerificacionPropiedad::query()->create([
+            'propiedad_id' => $ventaCasa->id,
+            'documentos_revisados' => true,
+            'visita_confirmada' => true,
+            'vendedor_identificado' => true,
+            'verificado_por' => null,
+            'fecha_verificacion' => now(),
+        ]);
+
+        $ventaCasa->forceFill(['created_at' => now()->subDays(2)])->save();
+        $ventaSinVerificar->forceFill(['created_at' => now()])->save();
+
+        $response = $this->get(route('home'));
+        $response->assertOk();
+
+        $contenido = $response->getContent();
+        $this->assertIsString($contenido);
+
+        $posVerificada = strpos($contenido, $ventaCasa->titulo);
+        $posSinVerificar = strpos($contenido, $ventaSinVerificar->titulo);
+
+        $this->assertNotFalse($posVerificada);
+        $this->assertNotFalse($posSinVerificar);
+        $this->assertLessThan($posSinVerificar, $posVerificada);
     }
 
     public function test_home_registers_unique_portal_visit_per_session(): void

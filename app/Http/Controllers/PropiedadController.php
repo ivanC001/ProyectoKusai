@@ -103,6 +103,7 @@ class PropiedadController extends Controller
         $request->user()->forceFill([
             'solicitudes_vistas_at' => now(),
         ])->save();
+        $request->user()->forgetUnreadSolicitudesCache();
 
         $query = Contacto::query()
             ->whereHas('propiedad', function ($propiedadQuery) use ($request): void {

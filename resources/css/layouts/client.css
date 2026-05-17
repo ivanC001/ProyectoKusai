@@ -9,11 +9,12 @@
         }
 
         * { box-sizing: border-box; }
-        body {
+body {
             margin: 0;
             font-family: "Manrope", sans-serif;
             color: var(--client-ink);
             background: var(--client-bg);
+            overflow-x: hidden;
         }
         a { color: inherit; text-decoration: none; }
 
@@ -84,6 +85,7 @@
     list-style: none;
     margin: 0;
     padding: 0;
+    min-width: 0;
 }
 .client-links a {
     color: var(--client-soft);
@@ -333,11 +335,11 @@
             font-size: .9rem;
             color: #1f4d3b;
         }
-        .client-nav .user-dropdown {
+.client-nav .user-dropdown {
             position: absolute;
             right: 0;
             top: calc(100% + 10px);
-            width: min(360px, 78vw);
+            width: min(360px, 92vw);
             border-radius: 16px;
             border: 1px solid #cde0d6;
             background: #ffffff;
@@ -567,7 +569,7 @@
             color: #fff;
         }
 
-        main.client-main {
+main.client-main {
             padding: 24px 0 34px;
         }
 
@@ -657,10 +659,58 @@
     font-size: .8rem;
 }
 
-@media (max-width: 720px) {
+.footer-credit {
+    margin: 0;
+    color: #9ab4a8;
+    font-size: .82rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.footer-credit a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #d9ebe1;
+    font-weight: 800;
+    border: 1px solid #3b6d56;
+    border-radius: 999px;
+    background: #1a4a36;
+    padding: 5px 10px;
+    transition: .2s ease;
+}
+
+.footer-credit a:hover {
+    color: #ffffff;
+    border-color: #5a8a72;
+    background: #225840;
+}
+
+@media (max-width: 980px) {
     .client-links { display: none; }
     .client-actions { display: none; }
     .client-mobile-nav { display: block; }
+}
+
+@media (max-width: 900px) {
+    .client-footer-wrap {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+    }
+}
+
+@media (max-width: 720px) {
+    .client-nav-wrap {
+        width: min(1240px, 96vw);
+    }
+    .client-mobile-dropdown {
+        min-width: min(320px, 92vw);
+        max-width: 92vw;
+    }
+    main.client-main {
+        padding-top: 16px;
+    }
     .client-footer-wrap {
         grid-template-columns: 1fr;
         gap: 18px;

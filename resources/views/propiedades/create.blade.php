@@ -288,12 +288,21 @@
         filter: grayscale(.2);
     }
 
-    @media (max-width: 900px) {
+    @media (max-width: 1100px) {
         .steps {
-            grid-template-columns: 1fr;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
         }
         .panel {
             padding: 16px;
+        }
+    }
+    @media (max-width: 700px) {
+        .steps {
+            grid-template-columns: 1fr;
+        }
+        .actions .btn {
+            width: 100%;
+            text-align: center;
         }
     }
 </style>

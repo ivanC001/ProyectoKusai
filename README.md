@@ -1,59 +1,315 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Kusay.pe - Portal inmobiliario (Laravel 12)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Kusay.pe es una plataforma web para publicar, buscar y gestionar propiedades inmobiliarias, enfocada en operaciones de venta, alquiler y proyectos inmobiliarios.
 
-## About Laravel
+El proyecto incluye:
+- Portal publico con filtros, destacados y detalle de propiedad.
+- Autenticacion con email/password y login social (Google/Facebook).
+- Gestion de publicaciones por usuario.
+- Recepcion de solicitudes de contacto.
+- Favoritos, comentarios y resenas.
+- Panel administrativo para tipos de propiedad, usuarios, soporte y sugerencias.
+- Flujo de verificacion de perfil de usuario.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## 1. Stack tecnico
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- PHP `^8.2`
+- Laravel `^12`
+- Vite `^7`
+- Tailwind CSS + CSS modular por layout/pagina
+- Alpine.js
+- Base de datos: SQLite/MySQL (configurable por `.env`)
 
-## Learning Laravel
+Dependencias principales:
+- `laravel/framework`
+- `laravel/socialite`
+- `laravel/breeze`
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+---
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## 2. Requisitos previos
 
-## Laravel Sponsors
+Antes de iniciar, valida tener instalado:
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+1. PHP 8.2+
+2. Composer 2+
+3. Node.js 20.19+ (recomendado LTS actual)
+4. npm 10+
+5. Motor de base de datos (SQLite o MySQL)
 
-### Premium Partners
+Nota importante:
+- Este proyecto usa Vite 7. Si usas una version menor de Node (por ejemplo 20.13), `npm run build` puede fallar.
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+---
 
-## Contributing
+## 3. Instalacion local
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### Opcion rapida (script de Composer)
 
-## Code of Conduct
+```bash
+composer run setup
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+El script hace:
+1. `composer install`
+2. Crea `.env` desde `.env.example` si no existe
+3. `php artisan key:generate`
+4. `php artisan migrate --force`
+5. `npm install`
+6. `npm run build`
 
-## Security Vulnerabilities
+### Opcion paso a paso
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```bash
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate
+npm install
+npm run dev
+php artisan serve
+```
 
-## License
+Si usaras almacenamiento publico de imagenes:
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```bash
+php artisan storage:link
+```
+
+---
+
+## 4. Configuracion de entorno (`.env`)
+
+Variables clave:
+
+### Aplicacion
+- `APP_NAME`
+- `APP_ENV`
+- `APP_DEBUG`
+- `APP_URL`
+
+### Base de datos
+- `DB_CONNECTION`
+- `DB_HOST`
+- `DB_PORT`
+- `DB_DATABASE`
+- `DB_USERNAME`
+- `DB_PASSWORD`
+
+### Correo
+- `MAIL_MAILER`
+- `MAIL_HOST`
+- `MAIL_PORT`
+- `MAIL_USERNAME`
+- `MAIL_PASSWORD`
+- `MAIL_FROM_ADDRESS`
+
+### Login social
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+- `GOOGLE_REDIRECT_URI`
+- `FACEBOOK_CLIENT_ID`
+- `FACEBOOK_CLIENT_SECRET`
+- `FACEBOOK_REDIRECT_URI`
+
+---
+
+## 5. Comandos utiles
+
+### Desarrollo completo (app + cola + logs + vite)
+
+```bash
+composer run dev
+```
+
+### Servidor y frontend por separado
+
+```bash
+php artisan serve
+npm run dev
+```
+
+### Testing
+
+```bash
+composer run test
+```
+
+o
+
+```bash
+php artisan test
+```
+
+### Build de produccion
+
+```bash
+npm run build
+```
+
+### Cache para produccion
+
+```bash
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+```
+
+---
+
+## 6. Seeders y datos base
+
+`DatabaseSeeder` ejecuta por defecto:
+- `TipoPropiedadSeeder`
+- `SupportTermsSeeder`
+
+Seeder opcional de demo:
+- `PropiedadDemoSeeder` (comentado por defecto)
+
+Si quieres poblar con datos demo:
+
+1. Abre `database/seeders/DatabaseSeeder.php`
+2. Descomenta `PropiedadDemoSeeder::class`
+3. Ejecuta:
+
+```bash
+php artisan db:seed
+```
+
+---
+
+## 7. Rutas principales
+
+### Portal publico
+- `GET /` -> home con filtros y listados
+- `GET /portal/propiedades/{id}` -> detalle de propiedad
+- `GET /como-publicar` -> guia para publicar
+- `GET /soporte/*` -> secciones de soporte
+
+### Acciones sobre propiedades (portal)
+- `POST /portal/propiedades/{id}/clic`
+- `POST /portal/propiedades/{id}/favorito/toggle`
+- `POST /portal/propiedades/{id}/contacto`
+- `POST /portal/propiedades/{id}/comentarios`
+- `POST /portal/propiedades/{id}/resenas`
+
+### Usuario autenticado
+- `GET /mis-publicaciones`
+- `GET /mis-solicitudes`
+- CRUD de publicaciones
+- `GET/PATCH /profile`
+- `GET/POST /profile/verificacion`
+
+### Admin
+Prefijo `admin/*` con middleware `auth + verified + admin` para:
+- dashboard
+- tipos de propiedad
+- soporte
+- sugerencias
+- usuarios
+- verificacion de usuarios
+
+---
+
+## 8. Estructura resumida
+
+```text
+app/
+  Http/Controllers/      # Logica de portal, propiedades, admin, auth
+  Models/                # Entidades Eloquent
+resources/
+  views/                 # Blade templates
+  css/                   # Estilos por layout/pagina
+  js/                    # Entrada JS (Vite)
+routes/
+  web.php                # Rutas principales
+  auth.php               # Rutas de autenticacion
+database/
+  migrations/            # Esquema
+  seeders/               # Datos iniciales y demo
+tests/
+  Feature/               # Pruebas funcionales
+  Unit/                  # Pruebas unitarias
+```
+
+---
+
+## 9. Rendimiento aplicado (resumen)
+
+El proyecto ya incluye varias mejoras de rendimiento:
+- Cache en catalogos y listados auxiliares.
+- Limitacion de escritura de visitas/clics por ventana de tiempo.
+- Cache HTTP para imagenes (`ETag`, `Last-Modified`, `Cache-Control`).
+- `lazy loading` en imagenes de tarjetas.
+- Separacion de bundles CSS por layout (`client-app.css` y `admin-app.css`).
+
+---
+
+## 10. Troubleshooting rapido
+
+### Error al construir frontend con Vite
+Problema:
+- Version de Node incompatible.
+
+Solucion:
+1. Actualiza Node a 20.19+ o 22.12+
+2. Elimina `node_modules` y reinstala:
+
+```bash
+rm -rf node_modules package-lock.json
+npm install
+npm run build
+```
+
+### No cargan imagenes subidas
+Solucion:
+
+```bash
+php artisan storage:link
+```
+
+### Cambios de estilos no se ven
+Solucion:
+1. Verifica que Vite este levantado (`npm run dev`)
+2. Limpia caches:
+
+```bash
+php artisan optimize:clear
+```
+
+---
+
+## 11. Pruebas disponibles
+
+En `tests/Feature` y `tests/Unit` hay pruebas para:
+- portal y filtros
+- gestion de propiedades
+- perfil
+- dashboard admin
+- validaciones de catalogo ubigeo
+
+Ejecutar:
+
+```bash
+php artisan test
+```
+
+---
+
+## 12. Contribucion (flujo sugerido)
+
+1. Crea una rama nueva
+2. Implementa cambios pequenos y atomicos
+3. Corre pruebas
+4. Adjunta capturas si hay cambios de UI
+5. Abre PR con descripcion clara
+
+---
+
+## 13. Contacto
+
+Si necesitas soporte funcional o tecnico del proyecto:
+- Email: `kusaycontacto@gmail.com`
+- Proyecto: Kusay.pe

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Favorito;
+use App\Models\ComentarioPortal;
 use App\Models\PortalVisita;
 use App\Models\Propiedad;
 use App\Models\TipoPropiedad;
@@ -324,5 +325,64 @@ class AdminDashboardTest extends TestCase
         $response = $this->actingAs($cliente)->get(route('admin.PanelAdministrativo.soporte'));
 
         $response->assertForbidden();
+    }
+
+    public function test_admin_can_view_suggestions_panel_and_moderate_feedback(): void
+    {
+        $admin = User::factory()->create(['rol' => 'admin']);
+        $cliente = User::factory()->create(['rol' => 'cliente']);
+
+        $feedback = ComentarioPortal::query()->create([
+            'user_id' => $cliente->id,
+            'puntaje' => 4,
+            'comentario' => 'Comentario público de prueba.',
+            'sugerencia' => 'Sugerencia privada para admin.',
+            'visible' => true,
+        ]);
+
+        $indexResponse = $this->actingAs($admin)->get(route('admin.PanelAdministrativo.sugerencias.index'));
+        $indexResponse->assertOk();
+        $indexResponse->assertSee('Moderación de comentarios y sugerencias');
+        $indexResponse->assertSee('Sugerencia privada para admin.');
+
+        $hideResponse = $this->actingAs($admin)->patch(route('admin.PanelAdministrativo.sugerencias.visibilidad.update', $feedback), [
+            'visible' => 0,
+        ]);
+        $hideResponse->assertRedirect(route('admin.PanelAdministrativo.sugerencias.index'));
+        $this->assertDatabaseHas('comentarios_portal', [
+            'id' => $feedback->id,
+            'visible' => 0,
+        ]);
+
+        $deleteResponse = $this->actingAs($admin)->delete(route('admin.PanelAdministrativo.sugerencias.destroy', $feedback));
+        $deleteResponse->assertRedirect(route('admin.PanelAdministrativo.sugerencias.index'));
+        $this->assertDatabaseMissing('comentarios_portal', [
+            'id' => $feedback->id,
+        ]);
+    }
+
+    public function test_non_admin_cannot_access_suggestions_panel_or_moderate_feedback(): void
+    {
+        $admin = User::factory()->create(['rol' => 'admin']);
+        $cliente = User::factory()->create(['rol' => 'cliente']);
+
+        $feedback = ComentarioPortal::query()->create([
+            'user_id' => $admin->id,
+            'puntaje' => 5,
+            'comentario' => 'Comentario visible.',
+            'sugerencia' => 'Sugerencia privada.',
+            'visible' => true,
+        ]);
+
+        $panelResponse = $this->actingAs($cliente)->get(route('admin.PanelAdministrativo.sugerencias.index'));
+        $panelResponse->assertForbidden();
+
+        $hideResponse = $this->actingAs($cliente)->patch(route('admin.PanelAdministrativo.sugerencias.visibilidad.update', $feedback), [
+            'visible' => 0,
+        ]);
+        $hideResponse->assertForbidden();
+
+        $deleteResponse = $this->actingAs($cliente)->delete(route('admin.PanelAdministrativo.sugerencias.destroy', $feedback));
+        $deleteResponse->assertForbidden();
     }
 }

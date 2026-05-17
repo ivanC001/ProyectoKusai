@@ -130,7 +130,15 @@
         font-size: .88rem;
         font-weight: 700;
     }
-    @media (max-width: 860px) {
+    @media (max-width: 1100px) {
+        .steps {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .meta {
+            grid-template-columns: 1fr;
+        }
+    }
+    @media (max-width: 700px) {
         .steps,
         .meta {
             grid-template-columns: 1fr;
@@ -138,6 +146,10 @@
         .countdown {
             width: 100%;
             margin-left: 0;
+        }
+        .actions .btn {
+            width: 100%;
+            text-align: center;
         }
     }
 </style>

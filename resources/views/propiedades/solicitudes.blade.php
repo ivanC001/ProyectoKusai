@@ -256,6 +256,11 @@
         .request-date {
             white-space: normal;
         }
+        .request-actions > * {
+            width: 100%;
+            text-align: center;
+            justify-content: center;
+        }
     }
 </style>
 @endsection

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ComentarioPortal;
 use App\Models\PortalVisita;
 use App\Models\Propiedad;
 use App\Models\TipoPropiedad;
@@ -147,6 +148,62 @@ class AdminTipoPropiedadController extends Controller
         return redirect()
             ->route($targetRoute, ['support_page' => $slug])
             ->with('success', 'Contenido de soporte actualizado correctamente.');
+    }
+
+    public function sugerencias(Request $request): View
+    {
+        $this->ensureAdmin($request);
+
+        $comentariosPortal = ComentarioPortal::query()
+            ->with('usuario:id,name,apellidos,email')
+            ->latest()
+            ->paginate(20)
+            ->withQueryString();
+
+        $metricas = [
+            'total' => ComentarioPortal::query()->count(),
+            'visibles' => ComentarioPortal::query()->where('visible', true)->count(),
+            'ocultos' => ComentarioPortal::query()->where('visible', false)->count(),
+            'con_sugerencia' => ComentarioPortal::query()
+                ->whereNotNull('sugerencia')
+                ->where('sugerencia', '!=', '')
+                ->count(),
+        ];
+
+        return view('admin.PanelAdministrativo.sugerencias', [
+            'comentariosPortal' => $comentariosPortal,
+            'metricas' => $metricas,
+        ]);
+    }
+
+    public function actualizarVisibilidadSugerencia(Request $request, ComentarioPortal $comentarioPortal): RedirectResponse
+    {
+        $this->ensureAdmin($request);
+
+        $validated = $request->validate([
+            'visible' => ['required', 'boolean'],
+        ]);
+
+        $comentarioPortal->update([
+            'visible' => (bool) $validated['visible'],
+        ]);
+
+        return redirect()
+            ->route('admin.PanelAdministrativo.sugerencias.index')
+            ->with('success', $comentarioPortal->visible
+                ? 'Comentario visible nuevamente en la sección pública.'
+                : 'Comentario ocultado correctamente de la sección pública.');
+    }
+
+    public function destroySugerencia(Request $request, ComentarioPortal $comentarioPortal): RedirectResponse
+    {
+        $this->ensureAdmin($request);
+
+        $comentarioPortal->delete();
+
+        return redirect()
+            ->route('admin.PanelAdministrativo.sugerencias.index')
+            ->with('success', 'Comentario y sugerencia eliminados correctamente.');
     }
 
     /**

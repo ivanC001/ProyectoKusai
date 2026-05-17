@@ -204,16 +204,16 @@
                         </div>
 
                         <div class="row g-2">
-                            <div class="col-sm-6">
+                            <div class="col-sm-12">
                                 <a href="{{ route('auth.social.redirect', ['provider' => 'google']) }}" class="btn btn-outline-secondary w-100 social-btn">
                                     <i class="bi bi-google me-2"></i>Google
                                 </a>
                             </div>
-                            <div class="col-sm-6">
+                            <!-- <div class="col-sm-6">
                                 <a href="{{ route('auth.social.redirect', ['provider' => 'facebook']) }}" class="btn btn-outline-primary w-100 social-btn">
                                     <i class="bi bi-facebook me-2"></i>Facebook
                                 </a>
-                            </div>
+                            </div> -->
                         </div>
 
                         <p class="text-center mt-4 mb-0 text-muted-soft">

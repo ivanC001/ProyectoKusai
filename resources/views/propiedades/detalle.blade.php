@@ -28,6 +28,7 @@
     .subtitle {
         margin: 0;
         color: #628274;
+        overflow-wrap: anywhere;
     }
     .layout {
         display: grid;
@@ -163,6 +164,15 @@
             height: 280px;
         }
     }
+    @media (max-width: 520px) {
+        .detail-wrap {
+            width: min(1080px, 96vw);
+        }
+        .content,
+        .map-panel {
+            padding: 12px;
+        }
+    }
 </style>
 @endsection
 
@@ -198,7 +208,7 @@
                     </p>
                     <div class="address-grid">
                         <div class="address-box">
-                            <span>Direccion completa</span>
+                            <span>Direccion</span>
                             <strong>{{ $propiedad->direccion ?: 'No especificada' }}</strong>
                         </div>
                         <div class="address-box">

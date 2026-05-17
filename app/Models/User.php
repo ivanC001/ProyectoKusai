@@ -9,8 +9,10 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 
@@ -175,6 +177,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(ComentarioPropiedad::class, 'user_id');
     }
 
+    public function comentariosPortal(): HasMany
+    {
+        return $this->hasMany(ComentarioPortal::class, 'user_id');
+    }
+
     public function resenasPropiedad(): HasMany
     {
         return $this->hasMany(ResenaPropiedad::class, 'user_id');
@@ -190,8 +197,54 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(PortalVisita::class, 'user_id');
     }
 
+    public function verificacionesPropiedadRealizadas(): HasMany
+    {
+        return $this->hasMany(VerificacionPropiedad::class, 'verificado_por');
+    }
+
+    public function verificacionUsuario(): HasOne
+    {
+        return $this->hasOne(VerificacionUsuario::class, 'user_id');
+    }
+
+    public function verificacionesUsuarioRevisadas(): HasMany
+    {
+        return $this->hasMany(VerificacionUsuario::class, 'verificado_por');
+    }
+
+    public function estaVerificadoPorKusay(): bool
+    {
+        $verificacion = $this->relationLoaded('verificacionUsuario')
+            ? $this->verificacionUsuario
+            : $this->verificacionUsuario()->first();
+
+        return $verificacion?->estaAprobada() ?? false;
+    }
+
     public function propiedadesFavoritas(): BelongsToMany
     {
         return $this->belongsToMany(Propiedad::class, 'favoritos', 'user_id', 'propiedad_id')->withTimestamps();
+    }
+
+    public function unreadSolicitudesCount(): int
+    {
+        $seenAt = $this->solicitudes_vistas_at?->timestamp ?? 0;
+        $cacheKey = sprintf('user:%d:solicitudes-unread:%d', $this->id, $seenAt);
+
+        return (int) Cache::remember($cacheKey, now()->addMinutes(2), function (): int {
+            return (int) Contacto::query()
+                ->join('propiedades', 'propiedades.id', '=', 'contactos.propiedad_id')
+                ->where('propiedades.user_id', $this->id)
+                ->when($this->solicitudes_vistas_at, function ($query): void {
+                    $query->where('contactos.created_at', '>', $this->solicitudes_vistas_at);
+                })
+                ->count('contactos.id');
+        });
+    }
+
+    public function forgetUnreadSolicitudesCache(): void
+    {
+        $seenAt = $this->solicitudes_vistas_at?->timestamp ?? 0;
+        Cache::forget(sprintf('user:%d:solicitudes-unread:%d', $this->id, $seenAt));
     }
 }

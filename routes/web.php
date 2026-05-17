@@ -4,32 +4,40 @@ use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AdminTipoPropiedadController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\PortalController;
+use App\Http\Controllers\ProfileVerificacionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PropiedadController;
 use App\Http\Controllers\SupportPageController;
+use App\Http\Controllers\VerificacionUsuarioController;
 use Illuminate\Support\Facades\Route;
 
 // index de la pagina
 Route::get('/', [PortalController::class, 'index'])->name('home');
+Route::get('/como-publicar', [PortalController::class, 'comoPublicar'])->name('portal.como-publicar');
+Route::post('/como-publicar/comentarios', [PortalController::class, 'storeComentarioComoPublicar'])
+    ->middleware(['auth', 'verified'])
+    ->name('portal.como-publicar.comentarios.store');
 Route::get('/portal/propiedades/{propiedad}', [PortalController::class, 'show'])
     ->whereNumber('propiedad')
     ->name('portal.propiedades.show');
 Route::post('/portal/propiedades/{propiedad}/clic', [PortalController::class, 'registrarClic'])
+    ->middleware('throttle:90,1')
     ->whereNumber('propiedad')
     ->name('portal.propiedades.click');
 Route::post('/portal/propiedades/{propiedad}/favorito/toggle', [PortalController::class, 'toggleFavorito'])
+    ->middleware('throttle:45,1')
     ->whereNumber('propiedad')
     ->name('portal.propiedades.favoritos.toggle');
 Route::post('/portal/propiedades/{propiedad}/contacto', [PortalController::class, 'solicitarContacto'])
-    ->middleware(['auth', 'verified'])
+    ->middleware(['auth', 'verified', 'throttle:12,1'])
     ->whereNumber('propiedad')
     ->name('portal.propiedades.contacto');
 Route::post('/portal/propiedades/{propiedad}/comentarios', [PortalController::class, 'storeComentario'])
-    ->middleware(['auth', 'verified'])
+    ->middleware(['auth', 'verified', 'throttle:20,1'])
     ->whereNumber('propiedad')
     ->name('portal.propiedades.comentarios.store');
 Route::post('/portal/propiedades/{propiedad}/resenas', [PortalController::class, 'storeResena'])
-    ->middleware(['auth', 'verified'])
+    ->middleware(['auth', 'verified', 'throttle:20,1'])
     ->whereNumber('propiedad')
     ->name('portal.propiedades.resenas.store');
 Route::get('/soporte', [SupportPageController::class, 'index'])->name('soporte.index');
@@ -79,6 +87,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::get('/profile/photo', [ProfileController::class, 'photo'])->name('profile.photo');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::get('/profile/verificacion', [ProfileVerificacionController::class, 'edit'])->name('profile.verificacion.edit');
+    Route::post('/profile/verificacion', [ProfileVerificacionController::class, 'store'])->name('profile.verificacion.store');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
@@ -89,6 +99,9 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
     Route::get('/paneladministrativo', [AdminTipoPropiedadController::class, 'index'])->name('PanelAdministrativo');
     Route::get('/paneladministrativo/soporte', [AdminTipoPropiedadController::class, 'support'])->name('PanelAdministrativo.soporte');
+    Route::get('/paneladministrativo/sugerencias', [AdminTipoPropiedadController::class, 'sugerencias'])->name('PanelAdministrativo.sugerencias.index');
+    Route::patch('/paneladministrativo/sugerencias/{comentarioPortal}/visibilidad', [AdminTipoPropiedadController::class, 'actualizarVisibilidadSugerencia'])->name('PanelAdministrativo.sugerencias.visibilidad.update');
+    Route::delete('/paneladministrativo/sugerencias/{comentarioPortal}', [AdminTipoPropiedadController::class, 'destroySugerencia'])->name('PanelAdministrativo.sugerencias.destroy');
     Route::post('/paneladministrativo/tipos', [AdminTipoPropiedadController::class, 'store'])->name('PanelAdministrativo.tipos.store');
     Route::patch('/paneladministrativo/tipos/{tipoPropiedad}', [AdminTipoPropiedadController::class, 'update'])->name('PanelAdministrativo.tipos.update');
     Route::delete('/paneladministrativo/tipos/{tipoPropiedad}', [AdminTipoPropiedadController::class, 'destroy'])->name('PanelAdministrativo.tipos.destroy');
@@ -99,6 +112,8 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::patch('/paneladministrativo/usuarios/{user}', [AdminUserController::class, 'update'])->name('PanelAdministrativo.usuarios.update');
     Route::patch('/paneladministrativo/usuarios/{user}/estado', [AdminUserController::class, 'actualizarEstado'])->name('PanelAdministrativo.usuarios.estado.update');
     Route::delete('/paneladministrativo/usuarios/{user}', [AdminUserController::class, 'destroy'])->name('PanelAdministrativo.usuarios.destroy');
+    Route::resource('verificaciones-usuarios', VerificacionUsuarioController::class)
+        ->only(['index', 'edit', 'update']);
 });
 
 require __DIR__.'/auth.php';

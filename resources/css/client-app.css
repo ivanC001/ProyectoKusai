@@ -1,0 +1,9 @@
+@import "./layouts/client.css";
+@import "./pages/welcome.css";
+@import "./pages/portal-index.css";
+@import "./pages/portal-show.css";
+@import "./pages/support.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

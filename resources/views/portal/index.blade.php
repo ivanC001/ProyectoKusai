@@ -8,7 +8,6 @@
         $tiposProyecto = $tiposPropiedad->filter(function ($tipo) {
             return str_contains(mb_strtolower($tipo->nombre), 'proyecto');
         });
-        $tipoProyecto = $tiposProyecto->first();
 
         $queryBase = request()->except(['page', 'modo', 'operacion']);
         $soloFavoritos = !empty($filtros['solo_favoritos']);
@@ -104,7 +103,6 @@
                 </div>
             </div>
         </section>
-
         @if (! $soloFavoritos && $destacadas->isNotEmpty())
         <section class="vip-sec sec" id="destacadas">
             <div class="shead">
@@ -116,14 +114,29 @@
             </div>
             <div class="vip-grid">
                 @forelse ($destacadas as $propiedad)
-                    <article class="card">
+                    @php
+                        $anuncianteVerificado = $propiedad->usuario?->estaVerificadoPorKusay() ?? false;
+                    @endphp
+                    <article class="card {{ $anuncianteVerificado ? 'card-user-verified' : '' }}">
                         @if ($propiedad->portadaImagen)
-                            <img class="card-cover" src="{{ route('portal.propiedades.imagen', [$propiedad, $propiedad->portadaImagen]) }}" alt="Portada de {{ $propiedad->titulo }}">
+                            <img
+                                class="card-cover"
+                                src="{{ route('portal.propiedades.imagen', [$propiedad, $propiedad->portadaImagen]) }}"
+                                alt="Portada de {{ $propiedad->titulo }}"
+                                loading="{{ $loop->first ? 'eager' : 'lazy' }}"
+                                decoding="async"
+                            >
                         @else
                             <div class="card-empty">Sin foto</div>
                         @endif
                         <div class="card-body">
                             <p class="card-type">{{ $propiedad->tipoPropiedad?->nombre ?? 'Propiedad' }}</p>
+                            @if ($propiedad->estaVerificadaPorKusay())
+                                <p class="card-verified-badge">
+                                    <i class="bi bi-patch-check-fill" aria-hidden="true"></i>
+                                    <span>Verificado por Kusay</span>
+                                </p>
+                            @endif
                             <h3 class="card-title">{{ $propiedad->titulo }}</h3>
                             <p class="card-loc">
                                 {{ $propiedad->ubicacion?->distrito ?? 'Sin distrito' }},
@@ -196,14 +209,29 @@
             @else
                 <div class="prop-grid">
                     @foreach ($propiedades as $propiedad)
-                        <article class="card">
+                        @php
+                            $anuncianteVerificado = $propiedad->usuario?->estaVerificadoPorKusay() ?? false;
+                        @endphp
+                        <article class="card {{ $anuncianteVerificado ? 'card-user-verified' : '' }}">
                             @if ($propiedad->portadaImagen)
-                                <img class="card-cover" src="{{ route('portal.propiedades.imagen', [$propiedad, $propiedad->portadaImagen]) }}" alt="Portada de {{ $propiedad->titulo }}">
+                                <img
+                                    class="card-cover"
+                                    src="{{ route('portal.propiedades.imagen', [$propiedad, $propiedad->portadaImagen]) }}"
+                                    alt="Portada de {{ $propiedad->titulo }}"
+                                    loading="{{ $loop->first ? 'eager' : 'lazy' }}"
+                                    decoding="async"
+                                >
                             @else
                                 <div class="card-empty">Sin foto</div>
                             @endif
                             <div class="card-body">
                                 <p class="card-type">{{ $propiedad->tipoPropiedad?->nombre ?? 'Propiedad' }}</p>
+                                @if ($propiedad->estaVerificadaPorKusay())
+                                    <p class="card-verified-badge">
+                                        <i class="bi bi-patch-check-fill" aria-hidden="true"></i>
+                                        <span>Verificado por Kusay</span>
+                                    </p>
+                                @endif
                                 <h3 class="card-title">{{ $propiedad->titulo }}</h3>
                                 <p class="card-loc">
                                     {{ $propiedad->ubicacion?->distrito ?? 'Sin distrito' }},
@@ -289,14 +317,29 @@
                     @else
                         <div class="prop-grid">
                             @foreach ($bloquesPrincipal['alquiler'] as $propiedad)
-                                <article class="card">
+                                @php
+                                    $anuncianteVerificado = $propiedad->usuario?->estaVerificadoPorKusay() ?? false;
+                                @endphp
+                                <article class="card {{ $anuncianteVerificado ? 'card-user-verified' : '' }}">
                                     @if ($propiedad->portadaImagen)
-                                        <img class="card-cover" src="{{ route('portal.propiedades.imagen', [$propiedad, $propiedad->portadaImagen]) }}" alt="Portada de {{ $propiedad->titulo }}">
+                                        <img
+                                            class="card-cover"
+                                            src="{{ route('portal.propiedades.imagen', [$propiedad, $propiedad->portadaImagen]) }}"
+                                            alt="Portada de {{ $propiedad->titulo }}"
+                                            loading="{{ $loop->first ? 'eager' : 'lazy' }}"
+                                            decoding="async"
+                                        >
                                     @else
                                         <div class="card-empty">Sin foto</div>
                                     @endif
                                     <div class="card-body">
                                         <p class="card-type">{{ $propiedad->tipoPropiedad?->nombre ?? 'Propiedad' }}</p>
+                                        @if ($propiedad->estaVerificadaPorKusay())
+                                            <p class="card-verified-badge">
+                                                <i class="bi bi-patch-check-fill" aria-hidden="true"></i>
+                                                <span>Verificado por Kusay</span>
+                                            </p>
+                                        @endif
                                         <h3 class="card-title">{{ $propiedad->titulo }}</h3>
                                         <p class="card-loc">
                                             {{ $propiedad->ubicacion?->distrito ?? 'Sin distrito' }},
@@ -355,14 +398,29 @@
                     @else
                         <div class="prop-grid">
                             @foreach ($bloquesPrincipal['proyectos'] as $propiedad)
-                                <article class="card">
+                                @php
+                                    $anuncianteVerificado = $propiedad->usuario?->estaVerificadoPorKusay() ?? false;
+                                @endphp
+                                <article class="card {{ $anuncianteVerificado ? 'card-user-verified' : '' }}">
                                     @if ($propiedad->portadaImagen)
-                                        <img class="card-cover" src="{{ route('portal.propiedades.imagen', [$propiedad, $propiedad->portadaImagen]) }}" alt="Portada de {{ $propiedad->titulo }}">
+                                        <img
+                                            class="card-cover"
+                                            src="{{ route('portal.propiedades.imagen', [$propiedad, $propiedad->portadaImagen]) }}"
+                                            alt="Portada de {{ $propiedad->titulo }}"
+                                            loading="{{ $loop->first ? 'eager' : 'lazy' }}"
+                                            decoding="async"
+                                        >
                                     @else
                                         <div class="card-empty">Sin foto</div>
                                     @endif
                                     <div class="card-body">
                                         <p class="card-type">{{ $propiedad->tipoPropiedad?->nombre ?? 'Proyecto' }}</p>
+                                        @if ($propiedad->estaVerificadaPorKusay())
+                                            <p class="card-verified-badge">
+                                                <i class="bi bi-patch-check-fill" aria-hidden="true"></i>
+                                                <span>Verificado por Kusay</span>
+                                            </p>
+                                        @endif
                                         <h3 class="card-title">{{ $propiedad->titulo }}</h3>
                                         <p class="card-loc">
                                             {{ $propiedad->ubicacion?->distrito ?? 'Sin distrito' }},
@@ -450,6 +508,14 @@
                             window.location.href = loginUrl;
                             return;
                         }
+                        if (response.status === 403) {
+                            const blockedPayload = await response.json();
+                            if (blockedPayload.redirect) {
+                                window.location.href = blockedPayload.redirect;
+                                return;
+                            }
+                            throw new Error(blockedPayload.message || 'Tu cuenta debe verificar correo para continuar.');
+                        }
 
                         const payload = await response.json();
                         if (!response.ok || payload.ok === false) {
@@ -484,6 +550,3 @@
         })();
     </script>
 @endsection
-
-
-

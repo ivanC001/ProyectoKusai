@@ -13,9 +13,10 @@
         : collect($propiedad->portadaImagen ? [$propiedad->portadaImagen] : []);
 
     $nombreAnunciante = trim(($propiedad->usuario?->name ?? '').' '.($propiedad->usuario?->apellidos ?? '')) ?: 'Anunciante';
+    $anuncianteVerificado = $propiedad->usuario?->estaVerificadoPorKusay() ?? false;
     $nombreComprador = auth()->check() ? trim(auth()->user()->name.' '.auth()->user()->apellidos) : '';
     $telefonoComprador = auth()->user()?->telefono ?? '';
-    $comentariosPublicos = $propiedad->comentarios->sortByDesc('created_at')->values();
+    $comentariosPublicos = $propiedad->comentarios->values();
     $comentariosConPuntaje = $comentariosPublicos->whereNotNull('puntaje');
     $promedioComentarios = $comentariosConPuntaje->isNotEmpty()
         ? number_format((float) $comentariosConPuntaje->avg('puntaje'), 1, '.', ',')
@@ -24,13 +25,24 @@
 
 <div class="wrap">
     <header class="top">
-        <a class="crumb" href="{{ route('home') }}">Volver al inicio</a>
-        <h1 class="title">{{ $propiedad->titulo }}</h1>
+        <div class="top-head">
+            <h1 class="title">{{ $propiedad->titulo }}</h1>
+            <a class="back-btn" href="{{ route('home') }}">
+                <i class="bi bi-arrow-left-circle" aria-hidden="true"></i>
+                <span>Volver al inicio</span>
+            </a>
+        </div>
         <p class="subtitle">
             {{ $propiedad->ubicacion?->distrito ?? 'Sin distrito' }},
             {{ $propiedad->ubicacion?->provincia ?? 'Sin provincia' }},
             {{ $propiedad->ubicacion?->departamento ?? 'Sin departamento' }}
         </p>
+        @if ($propiedad->estaVerificadaPorKusay())
+            <p class="verified-pill">
+                <i class="bi bi-patch-check-fill" aria-hidden="true"></i>
+                <span>Verificado por Kusay</span>
+            </p>
+        @endif
     </header>
 
     <div class="layout">
@@ -81,36 +93,41 @@
                     </div>
                 @endif
             </section>
+            
 
             <div class="content">
-                <p class="price">S/ {{ number_format((float) $propiedad->precio, 2, '.', ',') }}</p>
-                @if ($propiedad->precio_usd !== null)
-                    <p class="price-usd">US$ {{ number_format((float) $propiedad->precio_usd, 2, '.', ',') }}</p>
-                @endif
-                <p class="meta">
-                    {{ $propiedad->ubicacion?->distrito ?? 'Sin distrito' }},
-                    {{ $propiedad->ubicacion?->provincia ?? 'Sin provincia' }},
-                    {{ $propiedad->ubicacion?->departamento ?? 'Sin departamento' }}
-                </p>
-
-                <div class="address-card">
-                    <span>Direccion completa</span>
-                    <strong>{{ $propiedad->direccion ?: 'No especificada' }}</strong>
-                </div>
-                <div class="address-card">
-                    <span>Referencia</span>
-                    <strong>{{ $propiedad->referencia ?: 'No especificada' }}</strong>
+                <div class="content-head">
+                    <p class="price">S/ {{ number_format((float) $propiedad->precio, 2, '.', ',') }}</p>
+                    @if ($propiedad->precio_usd !== null)
+                        <p class="price-usd">US$ {{ number_format((float) $propiedad->precio_usd, 2, '.', ',') }}</p>
+                    @endif
+                    
+                    <p class="meta">
+                        {{ $propiedad->ubicacion?->distrito ?? 'Sin distrito' }},
+                        {{ $propiedad->ubicacion?->provincia ?? 'Sin provincia' }},
+                        {{ $propiedad->ubicacion?->departamento ?? 'Sin departamento' }}
+                    </p>
                 </div>
 
-                <div class="chips">
-                    <span class="chip">{{ ucfirst($propiedad->tipo) }}</span>
-                    <span class="chip">{{ $propiedad->tipoPropiedad?->nombre ?? 'Propiedad' }}</span>
-                    <span class="chip">{{ $propiedad->imagenes_count }} foto(s)</span>
-                    <span class="chip">{{ $propiedad->contactos_count }} contacto(s)</span>
-                    <span class="chip">{{ $propiedad->visitas_count }} clic(s)</span>
-                    <span class="chip">{{ $propiedad->comentarios_count }} comentario(s)</span>
-                    <span class="chip" id="detalle-favoritos-chip">{{ $propiedad->favoritos_count }} favorito(s)</span>
+                <div class="detail-item detail-item-description">
+                            <dt>Descripcion</dt>
+                            <strong class="desc">{{ $propiedad->descripcion }}</strong>
                 </div>
+                
+
+                <div class="address-row">
+                    <div class="address-card">
+                        <span>Direccion</span>
+                        <strong>{{ $propiedad->direccion ?: 'No especificada' }}</strong>
+                    </div>
+
+                    <div class="address-card">
+                        <span>Referencia</span>
+                        <strong>{{ $propiedad->referencia ?: 'No especificada' }}</strong>
+                    </div>
+                </div>
+
+
 
                 <dl class="detail-grid">
                     <div class="detail-item">
@@ -125,13 +142,7 @@
                         <dt>Banos</dt>
                         <dd>{{ $propiedad->banos !== null ? $propiedad->banos : 'No especificado' }}</dd>
                     </div>
-                    <div class="detail-item">
-                        <dt>Publicado</dt>
-                        <dd>{{ optional($propiedad->created_at)->format('Y-m-d H:i') }}</dd>
-                    </div>
                 </dl>
-
-                <p class="desc">{{ $propiedad->descripcion }}</p>
 
                 <section class="comments-box">
                     <div class="comments-head">
@@ -205,6 +216,9 @@
                             <p class="comments-empty">Aun no hay comentarios para esta propiedad.</p>
                         @endforelse
                     </div>
+                    <p class="comments-published">
+                        Publicado: {{ optional($propiedad->created_at)->format('Y-m-d H:i') }}
+                    </p>
                 </section>
 
                 @auth
@@ -240,6 +254,12 @@
                     </span>
                     <div>
                         <p class="contact-name">{{ $nombreAnunciante }}</p>
+                        @if ($anuncianteVerificado)
+                            <p class="contact-verify is-verified">
+                                <i class="bi bi-patch-check-fill" aria-hidden="true"></i>
+                                <span>Usuario verificado por Kusay</span>
+                            </p>
+                        @endif
                         <p class="contact-note">El anunciante recibira tu solicitud y tus datos de contacto.</p>
                     </div>
                 </div>
@@ -329,6 +349,13 @@
                 @endif
             </section>
         </aside>
+    </div>
+
+    <div class="footer-actions">
+        <a class="back-btn back-btn-end" href="{{ route('home') }}">
+            <i class="bi bi-house-door" aria-hidden="true"></i>
+            <span>Regresar al inicio</span>
+        </a>
     </div>
 </div>
 @endsection

@@ -95,8 +95,30 @@ class Propiedad extends Model
         return $this->hasMany(Visita::class, 'propiedad_id');
     }
 
+    public function verificacion(): HasOne
+    {
+        return $this->hasOne(VerificacionPropiedad::class, 'propiedad_id');
+    }
+
     public function usuariosFavoritos(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'favoritos', 'propiedad_id', 'user_id')->withTimestamps();
+    }
+
+    public function estaVerificadaPorKusay(): bool
+    {
+        if ($this->relationLoaded('usuario') && $this->usuario !== null) {
+            if ($this->usuario->relationLoaded('verificacionUsuario')) {
+                return $this->usuario->estaVerificadoPorKusay();
+            }
+        }
+
+        return VerificacionUsuario::query()
+            ->where('user_id', $this->user_id)
+            ->where('estado', 'aprobado')
+            ->where('dni_legible', true)
+            ->where('datos_coinciden', true)
+            ->where('contacto_validado', true)
+            ->exists();
     }
 }

@@ -263,18 +263,11 @@
         cursor: pointer;
     }
     .card-toolbar {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        grid-auto-rows: 40px;
-        align-items: stretch;
-        gap: 8px;
-    }
-    .card-toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 10px;
-    margin-top: 6px;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 6px;
     }
 
     .card-toolbar form {
@@ -282,8 +275,10 @@
     }
 
     .btn-tool {
-        width: 120px;
-        height: 52px;
+        flex: 1 1 calc(50% - 10px);
+        min-width: 132px;
+        min-height: 46px;
+        padding: 8px 10px;
 
         border: 1px solid #d5e1db;
         border-radius: 12px;
@@ -436,6 +431,14 @@
         .grid {
             grid-template-columns: 1fr;
         }
+        .card-ops {
+            width: 100%;
+            flex-wrap: wrap;
+        }
+        .card-ops .btn-main,
+        .card-ops .btn-clear {
+            flex: 1 1 100%;
+        }
         .filters-actions {
             grid-column: span 1;
         }
@@ -444,6 +447,10 @@
         }
         .btn-save {
             width: 100%;
+        }
+        .btn-tool {
+            flex-basis: 100%;
+            min-width: 100%;
         }
     }
 </style>

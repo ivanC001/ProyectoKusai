@@ -165,6 +165,18 @@
         font-size: .82rem;
         font-weight: 700;
     }
+    .verified-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border-radius: 999px;
+        padding: 6px 12px;
+        border: 1px solid #94d6b4;
+        background: #e9f8f0;
+        color: #11603e;
+        font-size: .82rem;
+        font-weight: 800;
+    }
 
     .actions {
         margin-top: 12px;
@@ -173,6 +185,9 @@
         justify-content: space-between;
         gap: 8px;
         flex-wrap: wrap;
+    }
+    .actions-end {
+        justify-content: flex-end;
     }
 
     .btn {
@@ -260,12 +275,19 @@
         .form-grid {
             grid-template-columns: 1fr;
         }
+        .actions .btn {
+            width: 100%;
+            text-align: center;
+        }
     }
 </style>
 @endsection
 
 @section('content')
 <div class="profile-wrap">
+    @php
+        $verificacionPerfil = $user->verificacionUsuario;
+    @endphp
     <section class="profile-head">
         <label for="foto_perfil" class="profile-photo-picker" title="Cambiar foto de perfil">
             @if ($user->tieneFotoPerfil())
@@ -288,11 +310,41 @@
             <div class="profile-meta">{{ $user->email }} | {{ $user->telefono ?: 'Sin telefono' }}</div>
             <div style="margin-top:8px;">
                 <span class="type-chip">{{ $user->tipo_persona === 'empresa' ? 'Empresa' : 'Persona natural' }}</span>
+                @if ($verificacionPerfil?->estaAprobada())
+                    <span class="verified-chip" style="margin-left:6px;">
+                        <i class="bi bi-patch-check-fill" aria-hidden="true"></i>
+                        <span>Verificado por Kusay</span>
+                    </span>
+                @endif
             </div>
         </div>
     </section>
 
     <section class="profile-grid">
+        <article class="card">
+            <h2>Verificación de perfil</h2>
+            <p>
+                Mejora la confianza de compradores validando tu identidad con DNI frontal y reverso.
+                @if ($verificacionPerfil)
+                    Estado actual:
+                    <strong>
+                        @if ($verificacionPerfil->estado === 'aprobado')
+                            Aprobado
+                        @elseif ($verificacionPerfil->estado === 'rechazado')
+                            Rechazado
+                        @else
+                            Pendiente
+                        @endif
+                    </strong>
+                @else
+                    Aún no enviaste tu solicitud.
+                @endif
+            </p>
+            <div class="actions actions-end">
+                <a href="{{ route('profile.verificacion.edit') }}" class="btn btn-outline">Verificar perfil</a>
+            </div>
+        </article>
+
         <article class="card">
             <h2>Datos del perfil</h2>
             <p>Actualiza tus datos para mejorar la confianza de los compradores.</p>
@@ -387,7 +439,7 @@
                     </div>
                 </div>
 
-                <div class="actions" style="display: flex; justify-content: flex-end;">
+                <div class="actions actions-end">
                     <!-- <a href="{{ route('propiedades.create') }}" class="btn btn-outline">Publica gratis</a> -->
                     <button class="btn btn-main" type="submit">Guardar cambios</button>
                 </div>
@@ -431,7 +483,7 @@
                     </div>
                 </div>
 
-                <div class="actions" style="display: flex; justify-content: flex-end;">
+                <div class="actions actions-end">
     <button class="btn btn-main" type="submit">Actualizar contraseña</button>
 </div>
             </form>

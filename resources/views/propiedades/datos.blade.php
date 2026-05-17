@@ -275,15 +275,24 @@
     .project-hint-list li {
         margin: 3px 0;
     }
-    @media (max-width: 900px) {
+    @media (max-width: 1100px) {
+        .steps {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
         .span-8, .span-6, .span-4, .span-3, .span-2 {
             grid-column: span 12;
         }
+        .panel {
+            padding: 16px;
+        }
+    }
+    @media (max-width: 700px) {
         .steps {
             grid-template-columns: 1fr;
         }
-        .panel {
-            padding: 16px;
+        .actions .btn {
+            width: 100%;
+            text-align: center;
         }
     }
 </style>
@@ -528,9 +537,16 @@
             const latText = document.getElementById('coord-lat-text');
             const lngText = document.getElementById('coord-lng-text');
             const direccionAyuda = document.getElementById('mapa-direccion-ayuda');
+            let direccionEditadaManualmente = Boolean(direccionInput && direccionInput.value.trim() !== '');
 
             if (!latInput || !lngInput || !mapContainer || typeof L === 'undefined') {
                 return;
+            }
+
+            if (direccionInput) {
+                direccionInput.addEventListener('input', () => {
+                    direccionEditadaManualmente = direccionInput.value.trim() !== '';
+                });
             }
 
             const peruCenter = [-9.1900, -75.0152];
@@ -591,12 +607,16 @@
 
                     const data = await response.json();
                     const direccion = data.display_name ? String(data.display_name).trim() : '';
+                    const direccionActual = direccionInput.value.trim();
+                    const puedeAutocompletar = !direccionEditadaManualmente || direccionActual === '';
 
-                    if (direccion !== '') {
+                    if (direccion !== '' && puedeAutocompletar) {
                         direccionInput.value = direccion;
                         if (direccionAyuda) {
                             direccionAyuda.textContent = 'Direccion aproximada autocompletada desde OpenStreetMap.';
                         }
+                    } else if (direccion !== '' && direccionAyuda) {
+                        direccionAyuda.textContent = 'Se mantuvo la direccion que escribiste manualmente.';
                     } else if (direccionAyuda) {
                         direccionAyuda.textContent = 'No se encontro una direccion exacta para este punto.';
                     }
