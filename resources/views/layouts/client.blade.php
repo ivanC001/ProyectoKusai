@@ -6,11 +6,11 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Kusay.pe')</title>
     <!-- Icono que se muestra en la pestaña del navegador -->
-    <link rel="icon" type="image/png" href="{{ asset('assets/image/png kusay.png') }}">
-    <link rel="apple-touch-icon" href="{{ asset('assets/image/png kusay.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('assets/image/kusay-icon.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('assets/image/kusay-icon.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="icon" type="image/png" href="/favicon.png">
+    <link rel="icon" type="image/png" href="/favicon.ico">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     @vite(['resources/css/client-app.css', 'resources/js/app.js'])
@@ -34,8 +34,8 @@
         <div class="client-nav-wrap">
             <!-- Logo de marca -->
             <a href="{{ route('home') }}" class="brand-logo">
-                <img src="{{ asset('assets/image/png kusay.png') }}" alt="Kusay" class="logo-icon">
-                <img src="{{ asset('assets/image/png 2.png') }}" alt="Kusay.pe" class="logo-text">
+                <img src="{{ asset('assets/image/kusay-icon.png') }}" alt="Kusay" class="logo-icon">
+                <img src="{{ asset('assets/image/kusay-wordmark.png') }}" alt="Kusay.pe" class="logo-text">
             </a>
 
             <ul class="client-links">
@@ -333,4 +333,5 @@
     @yield('scripts')
 </body>
 </html>
+
 

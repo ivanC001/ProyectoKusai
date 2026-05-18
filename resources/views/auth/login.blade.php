@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Iniciar sesion | Kusay.pe</title>
-    <link rel="icon" type="image/png" href="{{ asset('assets/image/png kusay.png') }}">
-    <link rel="apple-touch-icon" href="{{ asset('assets/image/png kusay.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('assets/image/kusay-icon.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('assets/image/kusay-icon.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700;9..144,800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -130,8 +130,8 @@
                     <div class="auth-cover d-flex flex-column justify-content-between">
                         <div>
                             <a href="{{ url('/') }}" class="auth-brand d-inline-flex align-items-center gap-2">
-                                <img src="{{ asset('assets/image/png kusay.png') }}" alt="Kusay" class="auth-logo-icon">
-                                <img src="{{ asset('assets/image/png 2.png') }}" alt="Kusay.pe" class="auth-logo-text">
+                                <img src="{{ asset('assets/image/kusay-icon.png') }}" alt="Kusay" class="auth-logo-icon">
+                                <img src="{{ asset('assets/image/kusay-wordmark.png') }}" alt="Kusay.pe" class="auth-logo-text">
                             </a>
                         </div>
                         <div>
@@ -227,3 +227,4 @@
     </main>
 </body>
 </html>
+

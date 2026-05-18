@@ -521,7 +521,7 @@ class PortalController extends Controller
         if ($correoDestino !== null && $correoDestino !== '') {
             dispatch(function () use ($correoDestino, $propiedad, $contacto): void {
                 try {
-                    Mail::raw($this->buildContactEmailBody($propiedad, $contacto), function (Message $message) use ($correoDestino, $propiedad, $contacto): void {
+                    Mail::send('emails.contacto-solicitud', $this->buildContactEmailData($propiedad, $contacto), function (Message $message) use ($correoDestino, $propiedad, $contacto): void {
                         $message
                             ->to($correoDestino)
                             ->replyTo($contacto->email, $contacto->nombre)
@@ -728,7 +728,19 @@ class PortalController extends Controller
         ]);
     }
 
-    private function buildContactEmailBody(Propiedad $propiedad, Contacto $contacto): string
+    /**
+     * @return array{
+     *   logo_url: string,
+     *   propiedad_titulo: string,
+     *   ubicacion: string,
+     *   precio: string,
+     *   contacto_nombre: string,
+     *   contacto_email: string,
+     *   contacto_telefono: string,
+     *   contacto_mensaje: string
+     * }
+     */
+    private function buildContactEmailData(Propiedad $propiedad, Contacto $contacto): array
     {
         $ubicacion = collect([
             $propiedad->ubicacion?->distrito,
@@ -736,23 +748,21 @@ class PortalController extends Controller
             $propiedad->ubicacion?->departamento,
         ])->filter()->implode(', ');
 
-        return implode(PHP_EOL, [
-            'Nueva solicitud de contacto en Kusay.pe',
-            '',
-            'Propiedad: '.$propiedad->titulo,
-            'Ubicación: '.($ubicacion !== '' ? $ubicacion : 'No especificada'),
-            'Precio: S/ '.number_format((float) $propiedad->precio, 2, '.', ','),
-            '',
-            'Datos del interesado:',
-            'Nombre: '.$contacto->nombre,
-            'Correo: '.$contacto->email,
-            'Teléfono: '.($contacto->telefono ?: 'No indicado'),
-            '',
-            'Mensaje:',
-            $contacto->mensaje,
-            '',
-            'Responde directamente a este correo para contactar al interesado.',
-        ]);
+        $mailLogoUrl = config('mail.logo_url');
+        $resolvedLogoUrl = is_string($mailLogoUrl) && trim($mailLogoUrl) !== ''
+            ? $mailLogoUrl
+            : 'https://kusay.pe/favicon.ico';
+
+        return [
+            'logo_url' => $resolvedLogoUrl,
+            'propiedad_titulo' => $propiedad->titulo,
+            'ubicacion' => $ubicacion !== '' ? $ubicacion : 'No especificada',
+            'precio' => 'S/ '.number_format((float) $propiedad->precio, 2, '.', ','),
+            'contacto_nombre' => $contacto->nombre,
+            'contacto_email' => $contacto->email,
+            'contacto_telefono' => $contacto->telefono ?: 'No indicado',
+            'contacto_mensaje' => $contacto->mensaje,
+        ];
     }
     private function resolveTipoIcon(string $tipoNombre): string
     {

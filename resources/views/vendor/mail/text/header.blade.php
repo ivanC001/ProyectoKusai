@@ -1,1 +1,1 @@
-{{ $slot }}: {{ $url }}
+KUSAY.PE: {{ $url }}
