@@ -115,6 +115,6 @@ return [
         'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
     ],
 
-    'logo_url' => env('MAIL_LOGO_URL', 'https://kusay.pe/assets/image/log4.png'),
+    'logo_url' => env('MAIL_LOGO_URL', 'https://kusay.pe/assets/image/logo1.png'),
 
 ];

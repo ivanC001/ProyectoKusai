@@ -751,7 +751,7 @@ class PortalController extends Controller
         $mailLogoUrl = config('mail.logo_url');
         $resolvedLogoUrl = is_string($mailLogoUrl) && trim($mailLogoUrl) !== ''
             ? $mailLogoUrl
-            : 'https://kusay.pe/assets/image/log4.png';
+            : 'https://kusay.pe/assets/image/logo1.png';
 
         return [
             'logo_url' => $resolvedLogoUrl,
