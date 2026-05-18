@@ -9,13 +9,8 @@
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:680px;margin:0 auto;background:#ffffff;border:1px solid #d5e3db;border-radius:14px;overflow:hidden;">
         <tr>
             <td style="padding:20px 22px;border-bottom:1px solid #e4eee8;background:linear-gradient(140deg,#eff7f2,#ffffff);">
-                <a href="{{ config('app.url') }}" style="display:inline-flex;align-items:center;gap:10px;text-decoration:none;">
-                    <span style="width:42px;height:42px;border-radius:999px;background:#133f2f;border:2px solid #2b7b55;display:inline-flex;align-items:center;justify-content:center;">
-                        <img src="{{ $logo_url }}" alt="Logo Kusay.pe" style="width:22px;height:22px;border-radius:999px;">
-                    </span>
-                    <span style="font-size:25px;font-weight:900;letter-spacing:.06em;color:#0f3325;">
-                        KUSAY<span style="color:#df8347;">.</span><span style="color:#1b6c49;">PE</span>
-                    </span>
+                <a href="{{ config('app.url') }}" style="display:inline-block;text-decoration:none;">
+                    <img src="{{ $logo_url }}" alt="Logo Kusay.pe" style="max-height:74px;width:auto;display:block;">
                 </a>
             </td>
         </tr>
