@@ -279,35 +279,53 @@
 
         .terms {
             display: flex;
-            align-items: flex-start;
+            align-items: center;
+            justify-content: flex-start;
             gap: 8px;
             color: #496d5c;
             font-size: .9rem;
+            flex-wrap: nowrap;
         }
         .terms-box {
             border: 1px solid #cfe0d6;
             border-radius: 12px;
-            background: #f7fbf8;
-            padding: 11px 12px;
+            background: #ffffff;
+            padding: 14px 16px;
         }
         .terms-check {
-            margin-top: 2px;
+            margin-top: 0;
+            flex-shrink: 0;
+            accent-color: #d39a2f;
+            width: 16px;
+            height: 16px;
+        }
+        .terms input[type="checkbox"] {
+            width: 16px !important;
+            min-width: 16px;
+            max-width: 16px;
+            display: inline-block;
+            flex: 0 0 16px;
+            margin: 0;
+            padding: 0;
         }
         .terms-copy {
-            display: grid;
-            gap: 4px;
+            display: inline;
+            white-space: nowrap;
         }
         .terms-copy strong {
             color: #164c37;
-            font-size: .93rem;
+            font-size: .96rem;
             line-height: 1.35;
+            font-weight: 800;
+            font-family: "Manrope", sans-serif;
         }
         .terms-link {
             color: #166b45;
-            font-size: .86rem;
+            font-size: .96rem;
             font-weight: 800;
             text-decoration: underline;
             text-underline-offset: 2px;
+            font-family: "Manrope", sans-serif;
         }
         .terms-link:hover {
             color: #0f5236;
@@ -348,6 +366,24 @@
 
         .hidden {
             display: none;
+        }
+        .terms {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+        }
+
+        .terms-check {
+            width: 18px;
+            height: 18px;
+            margin: 0;
+        }
+
+        .terms-copy {
+            display: inline;
+            font-size: 14px;
+            line-height: 1.4;
         }
 
         @media (max-width: 950px) {
@@ -455,8 +491,8 @@
 
                         <div class="field js-natural">
                             <label for="dni">DNI</label>
-                            <input id="dni" type="text" name="dni" value="{{ old('dni') }}" maxlength="20" inputmode="numeric">
-                            <div class="field-help">Ingresa tu DNI sin espacios ni guiones.</div>
+                            <input id="dni" type="text" name="dni" value="{{ old('dni') }}" maxlength="8" inputmode="numeric" pattern="\d{8}">
+                            <div class="field-help">Ingresa tu DNI sin espacios ni guiones (8 digitos).</div>
                         </div>
 
                         <div class="field js-empresa">
@@ -471,7 +507,7 @@
 
                         <div class="field js-empresa">
                             <label for="ruc">RUC</label>
-                            <input id="ruc" type="text" name="ruc" value="{{ old('ruc') }}" maxlength="20" inputmode="numeric">
+                            <input id="ruc" type="text" name="ruc" value="{{ old('ruc') }}" maxlength="11" inputmode="numeric" pattern="\d{11}">
                             <div class="field-help">Ingresa el RUC de la empresa para validar tu perfil comercial.</div>
                         </div>
 
@@ -505,12 +541,26 @@
                         <div class="field full">
                             <div class="terms-box">
                                 <label class="terms" for="acepta_terminos">
-                                    <input class="terms-check" id="acepta_terminos" type="checkbox" name="acepta_terminos" value="1" {{ old('acepta_terminos') ? 'checked' : '' }}>
+                                    <input 
+                                        class="terms-check" 
+                                        id="acepta_terminos" 
+                                        type="checkbox" 
+                                        name="acepta_terminos" 
+                                        value="1" 
+                                        {{ old('acepta_terminos') ? 'checked' : '' }}
+                                    >
+
                                     <span class="terms-copy">
-                                        <strong>Acepto los terminos y condiciones del portal.</strong>
-                                        <a class="terms-link" href="{{ route('soporte.terminos') }}" target="_blank" rel="noopener noreferrer">
-                                            Leer terminos y condiciones
+                                        Acepto los
+                                        <a 
+                                            class="terms-link" 
+                                            href="{{ route('soporte.terminos') }}" 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                        >
+                                            términos y condiciones
                                         </a>
+                                        del portal.
                                     </span>
                                 </label>
                             </div>
@@ -538,6 +588,12 @@
         const nameLabel = document.getElementById('name-label');
         const apellidosLabel = document.getElementById('apellidos-label');
         const empresaLabel = document.getElementById('empresa-label');
+        const nameInput = document.getElementById('name');
+        const apellidosInput = document.getElementById('apellidos');
+        const empresaInput = document.getElementById('empresa');
+        const nombreComercialInput = document.getElementById('nombre_comercial');
+        const telefonoInput = document.getElementById('telefono');
+        const whatsappInput = document.getElementById('whatsapp');
         let manualSelection = false;
         const personalDomains = [
             'gmail.com', 'hotmail.com', 'outlook.com', 'yahoo.com', 'icloud.com',
@@ -561,10 +617,12 @@
 
             if (dniInput) {
                 dniInput.required = tipo === 'natural';
+                dniInput.maxLength = 8;
             }
 
             if (rucInput) {
                 rucInput.required = tipo === 'empresa';
+                rucInput.maxLength = 11;
             }
 
             if (nameLabel) {
@@ -617,6 +675,36 @@
             }
         };
 
+        const toTitleCase = (value) => {
+            const text = (value || '').trim().toLowerCase().replace(/\s+/g, ' ');
+            if (!text) return '';
+            return text.replace(/(^|\s)([a-záéíóúñü])/g, (match, prefix, letter) => {
+                return `${prefix}${letter.toUpperCase()}`;
+            });
+        };
+
+        const keepDigits = (value, maxLength) => {
+            const digits = (value || '').replace(/\D+/g, '');
+            return typeof maxLength === 'number' ? digits.slice(0, maxLength) : digits;
+        };
+
+        const attachTitleCase = (input) => {
+            if (!input) return;
+            input.addEventListener('blur', () => {
+                input.value = toTitleCase(input.value);
+            });
+        };
+
+        const attachDigitsOnly = (input, maxLength) => {
+            if (!input) return;
+            input.addEventListener('input', () => {
+                input.value = keepDigits(input.value, maxLength);
+            });
+            input.addEventListener('blur', () => {
+                input.value = keepDigits(input.value, maxLength);
+            });
+        };
+
         buttons.forEach((btn) => {
             btn.addEventListener('click', () => {
                 manualSelection = true;
@@ -630,6 +718,16 @@
         emailInput?.addEventListener('blur', detectTipoByInputs);
         dniInput?.addEventListener('input', detectTipoByInputs);
         rucInput?.addEventListener('input', detectTipoByInputs);
+
+        attachTitleCase(nameInput);
+        attachTitleCase(apellidosInput);
+        attachTitleCase(empresaInput);
+        attachTitleCase(nombreComercialInput);
+
+        attachDigitsOnly(dniInput, 8);
+        attachDigitsOnly(rucInput, 11);
+        attachDigitsOnly(telefonoInput, 30);
+        attachDigitsOnly(whatsappInput, 30);
 
         applyTipo(tipoInput.value || 'natural');
         detectTipoByInputs();
